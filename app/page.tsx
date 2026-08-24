@@ -739,20 +739,6 @@ export default function Home() {
           </section>
         )}
 
-        <footer className="dock" aria-label="Kurzuebersicht">
-          <div>
-            <strong>{stats.done}</strong>
-            <span>fertig</span>
-          </div>
-          <div>
-            <strong>{stats.open}</strong>
-            <span>offen</span>
-          </div>
-          <div>
-            <strong>{categories.length}</strong>
-            <span>kategorien</span>
-          </div>
-        </footer>
       </section>
     </main>
   );

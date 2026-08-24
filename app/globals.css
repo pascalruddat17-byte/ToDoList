@@ -379,7 +379,7 @@ button {
   flex: 1;
   margin-top: 0.75rem;
   overflow-y: auto;
-  padding-bottom: 6.2rem;
+  padding-bottom: 1rem;
   scrollbar-width: none;
 }
 
@@ -615,45 +615,6 @@ button {
   background: color-mix(in srgb, var(--app-ink) 92%, transparent);
   color: var(--app-surface);
   font-weight: 900;
-}
-
-.dock {
-  position: fixed;
-  right: max(1rem, calc((100vw - 480px) / 2 + 1rem));
-  bottom: 1rem;
-  left: max(1rem, calc((100vw - 480px) / 2 + 1rem));
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--app-surface) 16%, transparent);
-  border-radius: calc(var(--app-radius) + 0.15rem);
-  background: color-mix(in srgb, var(--app-ink) 92%, transparent);
-  padding: 0.52rem;
-  box-shadow: 0 1rem 2.4rem rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(18px);
-}
-
-.dock div {
-  display: grid;
-  place-items: center;
-  min-height: 3.1rem;
-  border-radius: calc(var(--app-radius) * 0.76);
-  color: var(--app-surface);
-}
-
-.dock div:nth-child(2) {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dock strong {
-  font-size: 1.08rem;
-  line-height: 1;
-}
-
-.dock span {
-  color: color-mix(in srgb, var(--app-surface) 68%, transparent);
-  font-size: 0.72rem;
-  font-weight: 750;
 }
 
 .icon-button:active,
