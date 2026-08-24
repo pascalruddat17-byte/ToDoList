@@ -462,26 +462,64 @@ export default function Home() {
               ))}
             </nav>
 
-            <nav className="category-strip" aria-label="Kategorien filtern">
-              <button
-                className={categoryFilter === "all" ? "active" : ""}
-                type="button"
-                onClick={() => setCategoryFilter("all")}
-              >
-                Alle
-              </button>
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  className={categoryFilter === category.id ? "active" : ""}
-                  type="button"
-                  onClick={() => setCategoryFilter(category.id)}
-                  style={{ "--chip": category.color } as CSSProperties}
+            <section className="category-panel" aria-label="Kategorien">
+              <div className="category-panel-head">
+                <div>
+                  <p className="hero-kicker">Kategorien</p>
+                  <h2>Sortieren & erstellen</h2>
+                </div>
+                <select
+                  aria-label="Kategorie filtern"
+                  className="category-filter-select"
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value)}
                 >
-                  {category.name}
+                  <option value="all">Alle Kategorien</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <form className="quick-category-form" onSubmit={addCategory}>
+                <input
+                  value={newCategoryName}
+                  onChange={(event) => setNewCategoryName(event.target.value)}
+                  placeholder="Neue Kategorie"
+                  maxLength={20}
+                />
+                <input
+                  aria-label="Kategoriefarbe"
+                  type="color"
+                  value={newCategoryColor}
+                  onChange={(event) => setNewCategoryColor(event.target.value)}
+                />
+                <button type="submit">+</button>
+              </form>
+
+              <nav className="category-grid" aria-label="Kategorien filtern">
+                <button
+                  className={categoryFilter === "all" ? "active" : ""}
+                  type="button"
+                  onClick={() => setCategoryFilter("all")}
+                >
+                  Alle
                 </button>
-              ))}
-            </nav>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    className={categoryFilter === category.id ? "active" : ""}
+                    type="button"
+                    onClick={() => setCategoryFilter(category.id)}
+                    style={{ "--chip": category.color } as CSSProperties}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </nav>
+            </section>
 
             <section className="task-list" aria-label="Aufgabenliste">
               {visibleTasks.length ? (
