@@ -1402,6 +1402,123 @@ select:focus-visible {
   box-shadow: none;
 }
 
+.app-root {
+  color: var(--app-bg-contrast);
+}
+
+.app-topbar,
+.tomorrow-strip,
+.hero-panel,
+.overview-grid article,
+.composer,
+.category-panel,
+.month-card,
+.event-form,
+.settings-card,
+.task-card,
+.event-card,
+.empty-state,
+.widget-shell,
+.widget-item,
+.widget-empty {
+  color: var(--app-surface-contrast);
+}
+
+.app-topbar h1,
+.tomorrow-strip h2,
+.hero-panel h2,
+.overview-grid strong,
+.settings-heading h2,
+.category-panel-head h2,
+.task-line h3,
+.event-date strong,
+.empty-state p,
+.widget-header h1,
+.widget-item strong,
+.widget-empty strong {
+  color: var(--app-surface-contrast);
+}
+
+.hero-kicker,
+.eyebrow,
+.hero-copy,
+.tomorrow-strip p:last-child,
+.overview-grid span,
+.overview-grid small,
+.progress-ring small,
+.event-date span,
+.task-line span,
+.task-meta p,
+.event-card p,
+.empty-state span,
+.settings-card label,
+.segmented-field > span,
+.backup-status,
+.widget-item span,
+.widget-empty span {
+  color: color-mix(in srgb, var(--app-surface-contrast) 68%, transparent);
+}
+
+.composer input,
+.composer select,
+.event-form input,
+.event-form select,
+.settings-card input,
+.category-form input,
+.quick-category-form input,
+.category-filter-select,
+.category-editor input,
+.month-toolbar button,
+.today-button,
+.palette-grid button,
+.category-editor button,
+.delete-button,
+.widget-category-picker label,
+.widget-category-row span {
+  color: var(--app-surface-contrast);
+}
+
+.view-tabs button,
+.filters button,
+.category-grid button,
+.priority-group button,
+.segmented-field button {
+  color: color-mix(in srgb, var(--app-surface-contrast) 72%, transparent);
+}
+
+.view-tabs button.active,
+.filters button.active,
+.icon-button,
+.reset-button {
+  color: var(--app-ink-contrast);
+}
+
+.task-meta b {
+  color: var(--dot);
+}
+
+.task-card.done .check-button,
+.category-grid button.active,
+.day-cell span,
+.add-button,
+.wide-button,
+.quick-category-form button,
+.category-form button,
+.priority-group button.selected,
+.segmented-field button.selected,
+.widget-header a,
+.widget-link-grid a {
+  color: var(--app-accent-contrast);
+}
+
+.category-grid button.active {
+  color: var(--chip-contrast, var(--app-accent-contrast));
+}
+
+.task-card.done .check-button {
+  color: var(--category-contrast, var(--app-accent-contrast));
+}
+
 .icon-button:active,
 .add-button:active,
 .wide-button:active,
