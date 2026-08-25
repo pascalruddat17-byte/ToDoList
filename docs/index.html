@@ -20,6 +20,7 @@
         --app-bg: #f5f4ee;
         --app-surface: #fffefa;
         --app-accent: #246bfe;
+        --app-accent-contrast: #ffffff;
         --app-ink: #171a1f;
         --app-radius: 1.05rem;
         --density-pad: 0.72rem;
@@ -433,7 +434,7 @@
         width: fit-content;
         border-radius: 999px;
         background: var(--app-accent);
-        color: #fff;
+        color: var(--app-accent-contrast);
         font-size: 0.62rem;
         font-weight: 900;
         line-height: 1;
@@ -498,7 +499,7 @@
         min-height: 2.75rem;
         border-radius: calc(var(--app-radius) * 0.72);
         background: var(--app-accent);
-        color: #fff;
+        color: var(--app-accent-contrast);
         font-size: 1.45rem;
         font-weight: 900;
       }
@@ -568,7 +569,7 @@
 
       .category-grid button.active {
         background: var(--chip);
-        color: #fff;
+        color: var(--chip-contrast, var(--app-accent-contrast));
       }
 
       .task-list,
@@ -648,7 +649,7 @@
         border: 2px solid color-mix(in srgb, var(--category) 42%, var(--app-bg));
         border-radius: calc(var(--app-radius) * 0.72);
         background: color-mix(in srgb, var(--category) 12%, var(--app-surface));
-        color: #fff;
+        color: var(--category-contrast, var(--app-accent-contrast));
         font-size: 1.05rem;
         font-weight: 950;
       }
@@ -1065,7 +1066,7 @@
       .priority-group button.selected,
       .segmented-field button.selected {
         background: var(--app-accent);
-        color: #fff;
+        color: var(--app-accent-contrast);
         box-shadow: 0 0.45rem 1rem color-mix(in srgb, var(--app-accent) 20%, transparent);
       }
 
@@ -1558,6 +1559,18 @@
         return date.toISOString().slice(0, 10);
       }
 
+      function getReadableTextColor(color) {
+        const hex = String(color || "").replace("#", "");
+        if (!/^[0-9a-f]{6}$/i.test(hex)) return "#ffffff";
+
+        const red = parseInt(hex.slice(0, 2), 16);
+        const green = parseInt(hex.slice(2, 4), 16);
+        const blue = parseInt(hex.slice(4, 6), 16);
+        const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+        return brightness > 150 ? "#111827" : "#ffffff";
+      }
+
       function addMonthsToDate(date, amount) {
         return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12);
       }
@@ -1692,6 +1705,7 @@
         root.style.setProperty("--app-bg", theme.background);
         root.style.setProperty("--app-surface", theme.surface);
         root.style.setProperty("--app-accent", theme.accent);
+        root.style.setProperty("--app-accent-contrast", getReadableTextColor(theme.accent));
         root.style.setProperty("--app-ink", theme.ink);
         root.style.setProperty("--app-radius", radiusValue[theme.radius]);
         root.style.setProperty(
@@ -1843,6 +1857,7 @@
             },
           );
           button.style.setProperty("--chip", category.color);
+          button.style.setProperty("--chip-contrast", getReadableTextColor(category.color));
           grid.append(button);
         });
       }
@@ -1880,6 +1895,7 @@
           const card = document.createElement("article");
           card.className = `task-card ${task.done ? "done" : ""}`;
           card.style.setProperty("--category", category.color);
+          card.style.setProperty("--category-contrast", getReadableTextColor(category.color));
 
           const check = makeButton(task.done ? "ok" : "", "check-button", () => {
             tasks = tasks.map((item) =>
@@ -1952,6 +1968,7 @@
           const card = document.createElement("article");
           card.className = "event-card";
           card.style.setProperty("--category", category.color);
+          card.style.setProperty("--category-contrast", getReadableTextColor(category.color));
 
           const date = document.createElement("div");
           date.className = "event-date";

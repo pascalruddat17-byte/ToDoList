@@ -183,6 +183,21 @@ function getDateValue(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function getReadableTextColor(color: string) {
+  const hex = color.replace("#", "");
+
+  if (!/^[0-9a-f]{6}$/i.test(hex)) {
+    return "#ffffff";
+  }
+
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+  return brightness > 150 ? "#111827" : "#ffffff";
+}
+
 function addMonthsToDate(date: Date, amount: number) {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12);
 }
@@ -408,6 +423,7 @@ export default function Home() {
     "--app-bg": theme.background,
     "--app-surface": theme.surface,
     "--app-accent": theme.accent,
+    "--app-accent-contrast": getReadableTextColor(theme.accent),
     "--app-ink": theme.ink,
     "--app-radius": radiusValue[theme.radius],
     "--density-pad": theme.density === "compact" ? "0.52rem" : "0.72rem",
@@ -804,7 +820,12 @@ export default function Home() {
                     className={categoryFilter === category.id ? "active" : ""}
                     type="button"
                     onClick={() => setCategoryFilter(category.id)}
-                    style={{ "--chip": category.color } as CSSProperties}
+                    style={
+                      {
+                        "--chip": category.color,
+                        "--chip-contrast": getReadableTextColor(category.color),
+                      } as CSSProperties
+                    }
                   >
                     {category.name}
                   </button>
@@ -821,7 +842,12 @@ export default function Home() {
                     <article
                       className={`task-card ${task.done ? "done" : ""} priority-${task.priority}`}
                       key={task.id}
-                      style={{ "--category": category.color } as CSSProperties}
+                      style={
+                        {
+                          "--category": category.color,
+                          "--category-contrast": getReadableTextColor(category.color),
+                        } as CSSProperties
+                      }
                     >
                       <button
                         className="check-button"
@@ -997,7 +1023,12 @@ export default function Home() {
                     <article
                       className="event-card"
                       key={event.id}
-                      style={{ "--category": category.color } as CSSProperties}
+                      style={
+                        {
+                          "--category": category.color,
+                          "--category-contrast": getReadableTextColor(category.color),
+                        } as CSSProperties
+                      }
                     >
                       <div className="event-date">
                         <strong>{formatDateLabel(event.date)}</strong>

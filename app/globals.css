@@ -402,7 +402,7 @@ button {
   width: fit-content;
   border-radius: 999px;
   background: var(--app-accent);
-  color: #fff;
+  color: var(--app-accent-contrast);
   font-size: 0.62rem;
   font-weight: 900;
   line-height: 1;
@@ -466,7 +466,7 @@ button {
   min-height: 2.75rem;
   border-radius: calc(var(--app-radius) * 0.8);
   background: var(--app-accent);
-  color: #fff;
+  color: var(--app-accent-contrast);
   font-size: 1.8rem;
   font-weight: 850;
 }
@@ -475,7 +475,7 @@ button {
   min-height: 2.85rem;
   border-radius: calc(var(--app-radius) * 0.78);
   background: var(--app-accent);
-  color: #fff;
+  color: var(--app-accent-contrast);
   font-weight: 900;
 }
 
@@ -552,7 +552,7 @@ button {
   min-height: 2.75rem;
   border-radius: calc(var(--app-radius) * 0.72);
   background: var(--app-accent);
-  color: #fff;
+  color: var(--app-accent-contrast);
   font-size: 1.45rem;
   font-weight: 900;
 }
@@ -575,7 +575,7 @@ button {
 
 .category-grid button.active {
   background: var(--chip);
-  color: #fff;
+  color: var(--chip-contrast, var(--app-accent-contrast));
 }
 
 .task-list,
@@ -664,7 +664,7 @@ button {
   border: 2px solid color-mix(in srgb, var(--category) 42%, var(--app-bg));
   border-radius: calc(var(--app-radius) * 0.72);
   background: color-mix(in srgb, var(--category) 12%, var(--app-surface));
-  color: #fff;
+  color: var(--category-contrast, var(--app-accent-contrast));
   font-size: 1.05rem;
   font-weight: 950;
 }
@@ -1140,7 +1140,7 @@ select {
 .priority-group button.selected,
 .segmented-field button.selected {
   background: var(--app-accent);
-  color: #fff;
+  color: var(--app-accent-contrast);
   box-shadow: 0 0.45rem 1rem color-mix(in srgb, var(--app-accent) 20%, transparent);
 }
 
