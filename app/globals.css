@@ -178,7 +178,7 @@ button {
   border-radius: calc(var(--app-radius) + 0.55rem);
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--app-surface) 94%, transparent), color-mix(in srgb, var(--app-surface) 74%, transparent)),
-    linear-gradient(135deg, color-mix(in srgb, var(--app-accent) 23%, transparent), rgba(15, 143, 98, 0.14));
+    linear-gradient(135deg, color-mix(in srgb, var(--app-accent) 23%, transparent), color-mix(in srgb, var(--app-accent) 12%, transparent));
   box-shadow: 0 1.4rem 3.2rem rgba(0, 0, 0, 0.15);
   padding: 0.95rem;
 }
@@ -921,7 +921,7 @@ select {
 
 .app-root {
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--app-accent) 14%, var(--app-bg)) 0%, var(--app-bg) 42%, color-mix(in srgb, #0f8f62 10%, var(--app-bg)) 72%, color-mix(in srgb, #f2a51f 12%, var(--app-bg)) 100%);
+    linear-gradient(145deg, color-mix(in srgb, var(--app-accent) 16%, var(--app-bg)) 0%, var(--app-bg) 42%, color-mix(in srgb, var(--app-accent) 9%, var(--app-bg)) 72%, color-mix(in srgb, var(--app-accent) 5%, var(--app-bg)) 100%);
 }
 
 .phone-shell {
@@ -1043,11 +1043,11 @@ select {
 }
 
 .overview-grid article:nth-child(2)::before {
-  background: #0f8f62;
+  background: color-mix(in srgb, var(--app-accent) 72%, var(--app-surface));
 }
 
 .overview-grid article:nth-child(3)::before {
-  background: #f2a51f;
+  background: color-mix(in srgb, var(--app-accent) 46%, var(--app-bg));
 }
 
 .overview-grid strong {
@@ -1066,7 +1066,7 @@ select {
   position: absolute;
   inset: auto 0 0;
   height: 0.28rem;
-  background: linear-gradient(90deg, var(--app-accent), #0f8f62, #f2a51f);
+  background: linear-gradient(90deg, var(--app-accent), color-mix(in srgb, var(--app-accent) 72%, var(--app-surface)), color-mix(in srgb, var(--app-accent) 46%, var(--app-bg)));
   content: "";
 }
 
@@ -1128,7 +1128,7 @@ select {
 .quick-category-form button,
 .category-form button {
   background:
-    linear-gradient(135deg, var(--app-accent), color-mix(in srgb, var(--app-accent) 72%, #0f8f62));
+    linear-gradient(135deg, var(--app-accent), color-mix(in srgb, var(--app-accent) 72%, var(--app-ink)));
   box-shadow: 0 0.7rem 1.35rem color-mix(in srgb, var(--app-accent) 22%, transparent);
 }
 
