@@ -274,6 +274,7 @@ export default function Home() {
   const [note, setNote] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [eventDate, setEventDate] = useState(getDateInputValue(1));
+  const [selectedDate, setSelectedDate] = useState(getDateInputValue(0));
   const [eventTime, setEventTime] = useState("09:00");
   const [eventNote, setEventNote] = useState("");
   const [eventCategoryId, setEventCategoryId] = useState(defaultCategories[0].id);
@@ -477,6 +478,7 @@ export default function Home() {
     setEventNote("");
     setEventDate(getDateInputValue(1));
     setEventTime("09:00");
+    setSelectedDate(eventDate);
     setCalendarCursor(new Date(`${eventDate}T12:00:00`));
   }
 
@@ -883,11 +885,12 @@ export default function Home() {
                   <button
                     className={`day-cell ${day.inMonth ? "" : "muted"} ${
                       day.value === getDateInputValue(0) ? "today" : ""
-                    }`}
+                    } ${day.value === selectedDate ? "selected" : ""}`}
                     key={day.value}
                     type="button"
                     onClick={() => {
                       setEventDate(day.value);
+                      setSelectedDate(day.value);
                       setCalendarCursor(new Date(`${day.value}T12:00:00`));
                     }}
                   >
@@ -927,7 +930,14 @@ export default function Home() {
                   aria-label="Datum"
                   type="date"
                   value={eventDate}
-                  onChange={(event) => setEventDate(event.target.value)}
+                  onChange={(event) => {
+                    setEventDate(event.target.value);
+                    if (!event.target.value) {
+                      return;
+                    }
+                    setSelectedDate(event.target.value);
+                    setCalendarCursor(new Date(`${event.target.value}T12:00:00`));
+                  }}
                 />
                 <input
                   aria-label="Uhrzeit"

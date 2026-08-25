@@ -415,6 +415,14 @@
         box-shadow: inset 0 0 0 1px var(--app-accent);
       }
 
+      .day-cell.selected {
+        border-color: var(--app-accent);
+        background: color-mix(in srgb, var(--app-accent) 18%, var(--app-surface));
+        box-shadow:
+          inset 0 0 0 2px var(--app-accent),
+          0 0.5rem 1.15rem color-mix(in srgb, var(--app-accent) 22%, transparent);
+      }
+
       .day-cell strong {
         font-size: 0.8rem;
         font-weight: 950;
@@ -1297,6 +1305,7 @@
       };
       let events = readJson(eventStorageKey, savedBackup?.events || []);
       let calendarCursor = new Date(`${getDateInputValue(0)}T12:00:00`);
+      let selectedDate = getDateInputValue(0);
 
       tasks = normalizeTasks(tasks, categories);
       events = normalizeEvents(events, categories);
@@ -1388,11 +1397,13 @@
         getMonthDays(calendarCursor).forEach((day) => {
           const cell = makeButton("", "day-cell", () => {
             $("eventDate").value = day.value;
+            selectedDate = day.value;
             calendarCursor = new Date(`${day.value}T12:00:00`);
             render();
           });
           if (!day.inMonth) cell.classList.add("muted");
           if (day.value === getDateInputValue(0)) cell.classList.add("today");
+          if (day.value === selectedDate) cell.classList.add("selected");
 
           const dateNumber = document.createElement("strong");
           dateNumber.textContent = day.date.getDate();
@@ -1861,11 +1872,19 @@
           categoryId: $("eventCategory").value || categories[0].id,
         });
         calendarCursor = new Date(`${$("eventDate").value || getDateInputValue(1)}T12:00:00`);
+        selectedDate = $("eventDate").value || getDateInputValue(1);
         $("eventTitle").value = "";
         $("eventNote").value = "";
         $("eventDate").value = getDateInputValue(1);
         $("eventTime").value = "09:00";
         saveAll();
+        render();
+      });
+
+      $("eventDate").addEventListener("change", (event) => {
+        if (!event.target.value) return;
+        selectedDate = event.target.value;
+        calendarCursor = new Date(`${event.target.value}T12:00:00`);
         render();
       });
 
