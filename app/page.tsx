@@ -35,6 +35,13 @@ type CalendarEvent = {
   categoryId: string;
 };
 
+type CalendarDay = {
+  date: Date;
+  value: string;
+  inMonth: boolean;
+  events: CalendarEvent[];
+};
+
 type ThemeSettings = {
   appName: string;
   accent: string;
@@ -134,6 +141,41 @@ function formatDateLabel(value: string) {
   }).format(new Date(`${value}T12:00:00`));
 }
 
+function formatMonthLabel(date: Date) {
+  return new Intl.DateTimeFormat("de-DE", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function getDateValue(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addMonthsToDate(date: Date, amount: number) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12);
+}
+
+function getMonthDays(cursor: Date, events: CalendarEvent[]): CalendarDay[] {
+  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12);
+  const start = new Date(firstDay);
+  const mondayOffset = (firstDay.getDay() + 6) % 7;
+  start.setDate(firstDay.getDate() - mondayOffset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const value = getDateValue(date);
+
+    return {
+      date,
+      value,
+      inMonth: date.getMonth() === cursor.getMonth(),
+      events: events.filter((event) => event.date === value),
+    };
+  });
+}
+
 function readJson<T>(key: string, fallback: T): T {
   const saved = window.localStorage.getItem(key);
 
@@ -180,6 +222,9 @@ export default function Home() {
   const [eventTime, setEventTime] = useState("09:00");
   const [eventNote, setEventNote] = useState("");
   const [eventCategoryId, setEventCategoryId] = useState(defaultCategories[0].id);
+  const [calendarCursor, setCalendarCursor] = useState(
+    new Date(`${getDateInputValue(0)}T12:00:00`),
+  );
   const [priority, setPriority] = useState<Priority>("medium");
   const [taskCategoryId, setTaskCategoryId] = useState(defaultCategories[0].id);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -280,6 +325,11 @@ export default function Home() {
     return sortedEvents.filter((event) => event.date === tomorrow);
   }, [sortedEvents]);
 
+  const calendarDays = useMemo(
+    () => getMonthDays(calendarCursor, sortedEvents),
+    [calendarCursor, sortedEvents],
+  );
+
   const appStyle = {
     "--app-bg": theme.background,
     "--app-surface": theme.surface,
@@ -374,6 +424,7 @@ export default function Home() {
     setEventNote("");
     setEventDate(getDateInputValue(1));
     setEventTime("09:00");
+    setCalendarCursor(new Date(`${eventDate}T12:00:00`));
   }
 
   function deleteEvent(id: string) {
@@ -402,8 +453,14 @@ export default function Home() {
         task.categoryId === id ? { ...task, categoryId: fallbackId } : task,
       ),
     );
+    setEvents((current) =>
+      current.map((event) =>
+        event.categoryId === id ? { ...event, categoryId: fallbackId } : event,
+      ),
+    );
     setCategoryFilter((current) => (current === id ? "all" : current));
     setTaskCategoryId((current) => (current === id ? fallbackId : current));
+    setEventCategoryId((current) => (current === id ? fallbackId : current));
   }
 
   function resetCosmetics() {
@@ -424,7 +481,13 @@ export default function Home() {
       <section className="phone-shell">
         <header className="app-topbar">
           <div>
-            <p className="eyebrow">{view === "tasks" ? "Heute" : "Customize"}</p>
+            <p className="eyebrow">
+              {view === "tasks"
+                ? "Heute"
+                : view === "calendar"
+                  ? "Kalender"
+                  : "Customize"}
+            </p>
             <h1>{theme.appName}</h1>
           </div>
           <button
@@ -452,6 +515,24 @@ export default function Home() {
               ? `${tomorrowEvents[0].time || "Ganztags"} · ${tomorrowEvents[0].title}`
               : "Dein morgiger Tag ist noch frei."}
           </p>
+        </section>
+
+        <section className="overview-grid" aria-label="Übersicht">
+          <article>
+            <span>Heute</span>
+            <strong>{stats.open}</strong>
+            <small>offen</small>
+          </article>
+          <article>
+            <span>Morgen</span>
+            <strong>{tomorrowEvents.length}</strong>
+            <small>Termine</small>
+          </article>
+          <article>
+            <span>Kalender</span>
+            <strong>{events.length}</strong>
+            <small>gesamt</small>
+          </article>
         </section>
 
         <nav className="view-tabs" aria-label="App Bereiche">
@@ -669,6 +750,71 @@ export default function Home() {
           </>
         ) : view === "calendar" ? (
           <section className="calendar-panel" aria-label="Kalender">
+            <section className="month-card" aria-label="Monatskalender">
+              <div className="month-toolbar">
+                <button
+                  type="button"
+                  aria-label="Vorheriger Monat"
+                  onClick={() =>
+                    setCalendarCursor((current) => addMonthsToDate(current, -1))
+                  }
+                >
+                  ‹
+                </button>
+                <div>
+                  <p className="hero-kicker">Monat</p>
+                  <h2>{formatMonthLabel(calendarCursor)}</h2>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Nächster Monat"
+                  onClick={() =>
+                    setCalendarCursor((current) => addMonthsToDate(current, 1))
+                  }
+                >
+                  ›
+                </button>
+              </div>
+
+              <div className="weekday-row" aria-hidden="true">
+                {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
+                  <span key={day}>{day}</span>
+                ))}
+              </div>
+
+              <div className="month-grid">
+                {calendarDays.map((day) => (
+                  <button
+                    className={`day-cell ${day.inMonth ? "" : "muted"} ${
+                      day.value === getDateInputValue(0) ? "today" : ""
+                    }`}
+                    key={day.value}
+                    type="button"
+                    onClick={() => {
+                      setEventDate(day.value);
+                      setCalendarCursor(new Date(`${day.value}T12:00:00`));
+                    }}
+                  >
+                    <strong>{day.date.getDate()}</strong>
+                    {day.events.length ? (
+                      <span>{day.events.length}</span>
+                    ) : null}
+                    {day.events[0] ? <small>{day.events[0].title}</small> : null}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                className="today-button"
+                type="button"
+                onClick={() =>
+                  setCalendarCursor(new Date(`${getDateInputValue(0)}T12:00:00`))
+                }
+              >
+                Diesen Monat zeigen
+              </button>
+            </section>
+
             <form className="event-form" onSubmit={addEvent}>
               <div className="settings-heading">
                 <p className="hero-kicker">Termin</p>
