@@ -112,6 +112,7 @@
 
       .icon-button,
       .add-button,
+      .wide-button,
       .check-button,
       .delete-button,
       .quick-category-form button,
@@ -144,7 +145,7 @@
       }
 
       .view-tabs {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         margin-bottom: 0.9rem;
       }
 
@@ -207,6 +208,34 @@
         padding: 0.95rem;
       }
 
+      .tomorrow-strip {
+        display: grid;
+        grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
+        gap: 0.7rem;
+        align-items: center;
+        margin-bottom: 0.7rem;
+        border: 1px solid color-mix(in srgb, var(--app-accent) 22%, transparent);
+        border-radius: var(--app-radius);
+        background: color-mix(in srgb, var(--app-accent) 12%, var(--app-surface) 88%);
+        padding: 0.72rem;
+      }
+
+      .tomorrow-strip h2 {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 950;
+        line-height: 1.05;
+      }
+
+      .tomorrow-strip p:last-child {
+        margin: 0;
+        color: color-mix(in srgb, var(--app-ink) 68%, transparent);
+        font-size: 0.86rem;
+        font-weight: 780;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
       .hero-panel h2 {
         max-width: 12ch;
         margin-bottom: 0;
@@ -250,6 +279,7 @@
       }
 
       .composer,
+      .event-form,
       .category-panel,
       .settings-card {
         display: grid;
@@ -264,6 +294,10 @@
       .composer,
       .category-panel {
         margin-top: 0.7rem;
+      }
+
+      .event-form {
+        padding: 0.75rem;
       }
 
       input,
@@ -303,6 +337,7 @@
       }
 
       .add-button,
+      .wide-button,
       .quick-category-form button,
       .category-form button {
         min-height: 2.75rem;
@@ -311,6 +346,16 @@
         color: #fff;
         font-size: 1.45rem;
         font-weight: 900;
+      }
+
+      .wide-button {
+        width: 100%;
+      }
+
+      .event-form-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr);
+        gap: 0.55rem;
       }
 
       .priority-group,
@@ -372,6 +417,8 @@
       }
 
       .task-list,
+      .calendar-panel,
+      .event-list,
       .cosmetics-panel {
         display: grid;
         align-content: start;
@@ -379,6 +426,14 @@
         flex: 1;
         margin-top: 0.75rem;
         padding-bottom: 1rem;
+      }
+
+      .calendar-panel {
+        gap: 0.75rem;
+      }
+
+      .event-list {
+        margin-top: 0;
       }
 
       .task-card {
@@ -394,6 +449,38 @@
         background: color-mix(in srgb, var(--app-surface) 94%, transparent);
         padding: var(--density-pad);
         box-shadow: 0 0.65rem 1.55rem rgba(0, 0, 0, 0.09);
+      }
+
+      .event-card {
+        --category: var(--app-accent);
+        display: grid;
+        grid-template-columns: 5.2rem minmax(0, 1fr) 2.2rem;
+        gap: 0.58rem;
+        align-items: center;
+        min-height: 4.7rem;
+        border: 1px solid color-mix(in srgb, var(--app-ink) 10%, transparent);
+        border-left: 0.36rem solid var(--category);
+        border-radius: var(--app-radius);
+        background: color-mix(in srgb, var(--app-surface) 94%, transparent);
+        padding: var(--density-pad);
+        box-shadow: 0 0.65rem 1.55rem rgba(0, 0, 0, 0.09);
+      }
+
+      .event-date {
+        display: grid;
+        gap: 0.2rem;
+      }
+
+      .event-date strong {
+        font-size: 0.82rem;
+        font-weight: 950;
+        line-height: 1.05;
+      }
+
+      .event-date span {
+        color: color-mix(in srgb, var(--app-ink) 62%, transparent);
+        font-size: 0.74rem;
+        font-weight: 820;
       }
 
       .task-card.done {
@@ -460,6 +547,14 @@
       .task-meta p {
         min-width: 0;
         margin: 0;
+        color: color-mix(in srgb, var(--app-ink) 62%, transparent);
+        font-size: 0.82rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .event-card p {
+        margin: 0.22rem 0 0;
         color: color-mix(in srgb, var(--app-ink) 62%, transparent);
         font-size: 0.82rem;
         line-height: 1.25;
@@ -627,8 +722,17 @@
           </button>
         </header>
 
+        <section class="tomorrow-strip" aria-label="Morgen">
+          <div>
+            <p class="hero-kicker">Morgen</p>
+            <h2 id="tomorrowTitle">Nichts geplant</h2>
+          </div>
+          <p id="tomorrowCopy">Dein morgiger Tag ist noch frei.</p>
+        </section>
+
         <nav class="view-tabs" aria-label="App Bereiche">
           <button class="active" type="button" data-view="tasks">Tasks</button>
+          <button type="button" data-view="calendar">Kalender</button>
           <button type="button" data-view="cosmetics">Cosmetics</button>
         </nav>
 
@@ -673,21 +777,33 @@
             <div class="category-panel-head">
               <div>
                 <p class="hero-kicker">Kategorien</p>
-                <h2>Sortieren &amp; erstellen</h2>
+                <h2>Sortieren</h2>
               </div>
               <select id="categoryFilter" aria-label="Kategorie filtern"></select>
             </div>
-
-            <form class="quick-category-form" id="quickCategoryForm">
-              <input id="newCategoryName" placeholder="Neue Kategorie" maxlength="20" />
-              <input id="newCategoryColor" aria-label="Kategoriefarbe" type="color" value="#246bfe" />
-              <button type="submit">+</button>
-            </form>
 
             <nav class="category-grid" id="categoryGrid" aria-label="Kategorien filtern"></nav>
           </section>
 
           <section class="task-list" id="taskList" aria-label="Aufgabenliste"></section>
+        </section>
+
+        <section class="calendar-panel hidden" id="calendarView" aria-label="Kalender">
+          <form class="event-form" id="eventForm">
+            <div class="settings-heading">
+              <p class="hero-kicker">Termin</p>
+              <h2>Eintragen</h2>
+            </div>
+            <input id="eventTitle" placeholder="Was steht an?" maxlength="72" />
+            <div class="event-form-grid">
+              <input id="eventDate" aria-label="Datum" type="date" />
+              <input id="eventTime" aria-label="Uhrzeit" type="time" />
+            </div>
+            <select id="eventCategory" aria-label="Kategorie ausw&auml;hlen"></select>
+            <input id="eventNote" placeholder="Notiz optional" maxlength="90" />
+            <button class="wide-button" type="submit">Termin hinzuf&uuml;gen</button>
+          </form>
+          <section class="event-list" id="eventList" aria-label="Termine"></section>
         </section>
 
         <section class="cosmetics-panel hidden" id="cosmeticsView" aria-label="Cosmetics Einstellungen">
@@ -747,6 +863,7 @@
       const taskStorageKey = "pulse-todo-tasks";
       const categoryStorageKey = "pulse-todo-categories";
       const themeStorageKey = "pulse-todo-theme";
+      const eventStorageKey = "pulse-calendar-events";
 
       const defaultCategories = [
         { id: "cat-personal", name: "Privat", color: "#246bfe" },
@@ -818,6 +935,20 @@
         ["Solar", "#f2a51f", "#fff6df", "#fffefa", "#241b0d"],
       ];
 
+      function getDateInputValue(offsetDays = 0) {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        return date.toISOString().slice(0, 10);
+      }
+
+      function formatDateLabel(value) {
+        return new Intl.DateTimeFormat("de-DE", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+        }).format(new Date(`${value}T12:00:00`));
+      }
+
       let view = "tasks";
       let filter = "today";
       let priority = "medium";
@@ -825,6 +956,7 @@
       let tasks = readJson(taskStorageKey, starterTasks);
       let categories = readJson(categoryStorageKey, defaultCategories);
       let theme = { ...defaultTheme, ...readJson(themeStorageKey, defaultTheme) };
+      let events = readJson(eventStorageKey, []);
 
       if (!categories.length) categories = defaultCategories;
       tasks = tasks.map((task, index) => ({
@@ -836,6 +968,14 @@
         done: Boolean(task.done),
         createdAt: task.createdAt || new Date().toISOString(),
         due: task.due || "today",
+      }));
+      events = events.map((event, index) => ({
+        id: event.id || `event-${index}-${Date.now()}`,
+        title: event.title || "Neuer Termin",
+        date: event.date || getDateInputValue(1),
+        time: event.time || "",
+        note: event.note || "",
+        categoryId: event.categoryId || categories[0].id,
       }));
 
       function readJson(key, fallback) {
@@ -852,6 +992,7 @@
         localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
         localStorage.setItem(categoryStorageKey, JSON.stringify(categories));
         localStorage.setItem(themeStorageKey, JSON.stringify(theme));
+        localStorage.setItem(eventStorageKey, JSON.stringify(events));
       }
 
       function $(id) {
@@ -905,10 +1046,33 @@
         $("progressRing").style.setProperty("--progress", `${data.progress}%`);
       }
 
+      function sortedEvents() {
+        return [...events].sort((first, second) =>
+          `${first.date} ${first.time}`.localeCompare(`${second.date} ${second.time}`),
+        );
+      }
+
+      function tomorrowEvents() {
+        const tomorrow = getDateInputValue(1);
+        return sortedEvents().filter((event) => event.date === tomorrow);
+      }
+
+      function renderTomorrow() {
+        const items = tomorrowEvents();
+        $("tomorrowTitle").textContent = items.length
+          ? `${items.length} Termin${items.length > 1 ? "e" : ""}`
+          : "Nichts geplant";
+        $("tomorrowCopy").textContent = items[0]
+          ? `${items[0].time || "Ganztags"} · ${items[0].title}`
+          : "Dein morgiger Tag ist noch frei.";
+      }
+
       function renderSelects() {
         const taskCategory = $("taskCategory");
+        const eventCategory = $("eventCategory");
         const categorySelect = $("categoryFilter");
         taskCategory.replaceChildren();
+        eventCategory.replaceChildren();
         categorySelect.replaceChildren();
 
         const allOption = document.createElement("option");
@@ -922,6 +1086,11 @@
           taskOption.textContent = category.name;
           taskCategory.append(taskOption);
 
+          const eventOption = document.createElement("option");
+          eventOption.value = category.id;
+          eventOption.textContent = category.name;
+          eventCategory.append(eventOption);
+
           const filterOption = document.createElement("option");
           filterOption.value = category.id;
           filterOption.textContent = category.name;
@@ -930,6 +1099,9 @@
 
         if (!categories.some((category) => category.id === taskCategory.value)) {
           taskCategory.value = categories[0].id;
+        }
+        if (!categories.some((category) => category.id === eventCategory.value)) {
+          eventCategory.value = categories[0].id;
         }
         categorySelect.value = categoryFilter;
       }
@@ -1035,6 +1207,70 @@
         });
       }
 
+      function renderCalendar() {
+        $("eventDate").value ||= getDateInputValue(1);
+        $("eventTime").value ||= "09:00";
+
+        const list = $("eventList");
+        list.replaceChildren();
+        const items = sortedEvents();
+
+        if (!items.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-state";
+          const inner = document.createElement("div");
+          const title = document.createElement("p");
+          title.textContent = "Noch keine Termine.";
+          const copy = document.createElement("span");
+          copy.textContent = "Trage oben deinen ersten Termin ein.";
+          inner.append(title, copy);
+          empty.append(inner);
+          list.append(empty);
+          return;
+        }
+
+        items.forEach((event) => {
+          const category = findCategory(event.categoryId);
+          const card = document.createElement("article");
+          card.className = "event-card";
+          card.style.setProperty("--category", category.color);
+
+          const date = document.createElement("div");
+          date.className = "event-date";
+          const dateLabel = document.createElement("strong");
+          dateLabel.textContent = formatDateLabel(event.date);
+          const timeLabel = document.createElement("span");
+          timeLabel.textContent = event.time || "Ganztags";
+          date.append(dateLabel, timeLabel);
+
+          const content = document.createElement("div");
+          content.className = "task-content";
+          const line = document.createElement("div");
+          line.className = "task-line";
+          const title = document.createElement("h3");
+          title.textContent = event.title;
+          const categoryLabel = document.createElement("span");
+          categoryLabel.textContent = category.name;
+          line.append(title, categoryLabel);
+          content.append(line);
+          if (event.note) {
+            const note = document.createElement("p");
+            note.textContent = event.note;
+            content.append(note);
+          }
+
+          const remove = makeButton("x", "delete-button", () => {
+            events = events.filter((item) => item.id !== event.id);
+            saveAll();
+            render();
+          });
+          remove.setAttribute("aria-label", "Termin loeschen");
+
+          card.append(date, content, remove);
+          list.append(card);
+        });
+      }
+
       function renderCosmetics() {
         $("themeAppName").value = theme.appName;
         $("themeAccent").value = theme.accent;
@@ -1107,8 +1343,10 @@
           button.classList.toggle("active", button.dataset.view === view);
         });
         $("tasksView").classList.toggle("hidden", view !== "tasks");
+        $("calendarView").classList.toggle("hidden", view !== "calendar");
         $("cosmeticsView").classList.toggle("hidden", view !== "cosmetics");
-        $("viewLabel").textContent = view === "tasks" ? "Heute" : "Customize";
+        $("viewLabel").textContent =
+          view === "tasks" ? "Heute" : view === "calendar" ? "Kalender" : "Customize";
       }
 
       function renderFilters() {
@@ -1125,9 +1363,11 @@
         renderView();
         renderFilters();
         renderHero();
+        renderTomorrow();
         renderSelects();
         renderCategoryGrid();
         renderTasks();
+        renderCalendar();
         renderCosmetics();
         renderPalettes();
         renderSegmented("radiusGroup", ["sharp", "soft", "round"], theme.radius, (value) => {
@@ -1162,6 +1402,9 @@
         categories = categories.filter((category) => category.id !== id);
         tasks = tasks.map((task) =>
           task.categoryId === id ? { ...task, categoryId: fallback.id } : task,
+        );
+        events = events.map((event) =>
+          event.categoryId === id ? { ...event, categoryId: fallback.id } : event,
         );
         if (categoryFilter === id) categoryFilter = "all";
         saveAll();
@@ -1211,14 +1454,29 @@
         render();
       });
 
-      $("quickCategoryForm").addEventListener("submit", (event) => {
-        event.preventDefault();
-        addCategory("newCategoryName", "newCategoryColor");
-      });
-
       $("categoryForm").addEventListener("submit", (event) => {
         event.preventDefault();
         addCategory("newCategoryNameCosmetics", "newCategoryColorCosmetics");
+      });
+
+      $("eventForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const title = $("eventTitle").value.trim();
+        if (!title) return;
+        events.push({
+          id: crypto.randomUUID(),
+          title,
+          date: $("eventDate").value || getDateInputValue(1),
+          time: $("eventTime").value || "",
+          note: $("eventNote").value.trim(),
+          categoryId: $("eventCategory").value || categories[0].id,
+        });
+        $("eventTitle").value = "";
+        $("eventNote").value = "";
+        $("eventDate").value = getDateInputValue(1);
+        $("eventTime").value = "09:00";
+        saveAll();
+        render();
       });
 
       $("categoryFilter").addEventListener("change", (event) => {
@@ -1262,6 +1520,7 @@
         theme = { ...defaultTheme };
         categories = defaultCategories.map((category) => ({ ...category }));
         tasks = tasks.map((task) => ({ ...task, categoryId: categories[0].id }));
+        events = events.map((event) => ({ ...event, categoryId: categories[0].id }));
         categoryFilter = "all";
         saveAll();
         render();

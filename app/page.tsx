@@ -3,7 +3,7 @@
 import type { CSSProperties, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-type View = "tasks" | "cosmetics";
+type View = "tasks" | "calendar" | "cosmetics";
 type Filter = "today" | "all" | "done";
 type Priority = "low" | "medium" | "high";
 type Radius = "sharp" | "soft" | "round";
@@ -26,6 +26,15 @@ type Category = {
   color: string;
 };
 
+type CalendarEvent = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  note: string;
+  categoryId: string;
+};
+
 type ThemeSettings = {
   appName: string;
   accent: string;
@@ -39,6 +48,7 @@ type ThemeSettings = {
 const taskStorageKey = "pulse-todo-tasks";
 const categoryStorageKey = "pulse-todo-categories";
 const themeStorageKey = "pulse-todo-theme";
+const eventStorageKey = "pulse-calendar-events";
 
 const defaultCategories: Category[] = [
   { id: "cat-personal", name: "Privat", color: "#246bfe" },
@@ -110,6 +120,20 @@ const palettes = [
   ["Solar", "#f2a51f", "#fff6df", "#fffefa", "#241b0d"],
 ];
 
+function getDateInputValue(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDateLabel(value: string) {
+  return new Intl.DateTimeFormat("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(`${value}T12:00:00`));
+}
+
 function readJson<T>(key: string, fallback: T): T {
   const saved = window.localStorage.getItem(key);
 
@@ -148,8 +172,14 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>(starterTasks);
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [theme, setTheme] = useState<ThemeSettings>(defaultTheme);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDate, setEventDate] = useState(getDateInputValue(1));
+  const [eventTime, setEventTime] = useState("09:00");
+  const [eventNote, setEventNote] = useState("");
+  const [eventCategoryId, setEventCategoryId] = useState(defaultCategories[0].id);
   const [priority, setPriority] = useState<Priority>("medium");
   const [taskCategoryId, setTaskCategoryId] = useState(defaultCategories[0].id);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -172,11 +202,26 @@ export default function Home() {
         themeStorageKey,
         defaultTheme,
       );
+      const savedEvents = readJson<Partial<CalendarEvent>[]>(
+        eventStorageKey,
+        [],
+      );
 
       setCategories(cleanCategories);
       setTasks(normalizeTasks(savedTasks, cleanCategories));
+      setEvents(
+        savedEvents.map((event, index) => ({
+          id: event.id ?? `event-${index}-${Date.now()}`,
+          title: event.title ?? "Neuer Termin",
+          date: event.date ?? getDateInputValue(1),
+          time: event.time ?? "",
+          note: event.note ?? "",
+          categoryId: event.categoryId ?? cleanCategories[0].id,
+        })),
+      );
       setTheme({ ...defaultTheme, ...savedTheme });
       setTaskCategoryId(cleanCategories[0].id);
+      setEventCategoryId(cleanCategories[0].id);
       setIsReady(true);
     }, 0);
 
@@ -188,8 +233,9 @@ export default function Home() {
       window.localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
       window.localStorage.setItem(categoryStorageKey, JSON.stringify(categories));
       window.localStorage.setItem(themeStorageKey, JSON.stringify(theme));
+      window.localStorage.setItem(eventStorageKey, JSON.stringify(events));
     }
-  }, [categories, isReady, tasks, theme]);
+  }, [categories, events, isReady, tasks, theme]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -220,6 +266,19 @@ export default function Home() {
 
     return nextTasks;
   }, [categoryFilter, filter, tasks]);
+
+  const sortedEvents = useMemo(
+    () =>
+      [...events].sort((first, second) =>
+        `${first.date} ${first.time}`.localeCompare(`${second.date} ${second.time}`),
+      ),
+    [events],
+  );
+
+  const tomorrowEvents = useMemo(() => {
+    const tomorrow = getDateInputValue(1);
+    return sortedEvents.filter((event) => event.date === tomorrow);
+  }, [sortedEvents]);
 
   const appStyle = {
     "--app-bg": theme.background,
@@ -292,6 +351,35 @@ export default function Home() {
     setNewCategoryName("");
   }
 
+  function addEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cleanTitle = eventTitle.trim();
+
+    if (!cleanTitle) {
+      return;
+    }
+
+    setEvents((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        title: cleanTitle,
+        date: eventDate,
+        time: eventTime,
+        note: eventNote.trim(),
+        categoryId: eventCategoryId,
+      },
+    ]);
+    setEventTitle("");
+    setEventNote("");
+    setEventDate(getDateInputValue(1));
+    setEventTime("09:00");
+  }
+
+  function deleteEvent(id: string) {
+    setEvents((current) => current.filter((event) => event.id !== id));
+  }
+
   function updateCategory(id: string, changes: Partial<Category>) {
     setCategories((current) =>
       current.map((category) =>
@@ -326,6 +414,9 @@ export default function Home() {
     setTasks((current) =>
       current.map((task) => ({ ...task, categoryId: defaultCategories[0].id })),
     );
+    setEvents((current) =>
+      current.map((event) => ({ ...event, categoryId: defaultCategories[0].id })),
+    );
   }
 
   return (
@@ -347,9 +438,26 @@ export default function Home() {
           </button>
         </header>
 
+        <section className="tomorrow-strip" aria-label="Morgen">
+          <div>
+            <p className="hero-kicker">Morgen</p>
+            <h2>
+              {tomorrowEvents.length
+                ? `${tomorrowEvents.length} Termin${tomorrowEvents.length > 1 ? "e" : ""}`
+                : "Nichts geplant"}
+            </h2>
+          </div>
+          <p>
+            {tomorrowEvents[0]
+              ? `${tomorrowEvents[0].time || "Ganztags"} · ${tomorrowEvents[0].title}`
+              : "Dein morgiger Tag ist noch frei."}
+          </p>
+        </section>
+
         <nav className="view-tabs" aria-label="App Bereiche">
           {[
             ["tasks", "Tasks"],
+            ["calendar", "Kalender"],
             ["cosmetics", "Cosmetics"],
           ].map(([key, label]) => (
             <button
@@ -466,7 +574,7 @@ export default function Home() {
               <div className="category-panel-head">
                 <div>
                   <p className="hero-kicker">Kategorien</p>
-                  <h2>Sortieren & erstellen</h2>
+                  <h2>Sortieren</h2>
                 </div>
                 <select
                   aria-label="Kategorie filtern"
@@ -482,22 +590,6 @@ export default function Home() {
                   ))}
                 </select>
               </div>
-
-              <form className="quick-category-form" onSubmit={addCategory}>
-                <input
-                  value={newCategoryName}
-                  onChange={(event) => setNewCategoryName(event.target.value)}
-                  placeholder="Neue Kategorie"
-                  maxLength={20}
-                />
-                <input
-                  aria-label="Kategoriefarbe"
-                  type="color"
-                  value={newCategoryColor}
-                  onChange={(event) => setNewCategoryColor(event.target.value)}
-                />
-                <button type="submit">+</button>
-              </form>
 
               <nav className="category-grid" aria-label="Kategorien filtern">
                 <button
@@ -575,6 +667,96 @@ export default function Home() {
               )}
             </section>
           </>
+        ) : view === "calendar" ? (
+          <section className="calendar-panel" aria-label="Kalender">
+            <form className="event-form" onSubmit={addEvent}>
+              <div className="settings-heading">
+                <p className="hero-kicker">Termin</p>
+                <h2>Eintragen</h2>
+              </div>
+              <input
+                value={eventTitle}
+                onChange={(event) => setEventTitle(event.target.value)}
+                placeholder="Was steht an?"
+                maxLength={72}
+              />
+              <div className="event-form-grid">
+                <input
+                  aria-label="Datum"
+                  type="date"
+                  value={eventDate}
+                  onChange={(event) => setEventDate(event.target.value)}
+                />
+                <input
+                  aria-label="Uhrzeit"
+                  type="time"
+                  value={eventTime}
+                  onChange={(event) => setEventTime(event.target.value)}
+                />
+              </div>
+              <select
+                aria-label="Kategorie auswählen"
+                value={eventCategoryId}
+                onChange={(event) => setEventCategoryId(event.target.value)}
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={eventNote}
+                onChange={(event) => setEventNote(event.target.value)}
+                placeholder="Notiz optional"
+                maxLength={90}
+              />
+              <button className="wide-button" type="submit">
+                Termin hinzufügen
+              </button>
+            </form>
+
+            <section className="event-list" aria-label="Termine">
+              {sortedEvents.length ? (
+                sortedEvents.map((event) => {
+                  const category = findCategory(categories, event.categoryId);
+
+                  return (
+                    <article
+                      className="event-card"
+                      key={event.id}
+                      style={{ "--category": category.color } as CSSProperties}
+                    >
+                      <div className="event-date">
+                        <strong>{formatDateLabel(event.date)}</strong>
+                        <span>{event.time || "Ganztags"}</span>
+                      </div>
+                      <div className="task-content">
+                        <div className="task-line">
+                          <h3>{event.title}</h3>
+                          <span>{category.name}</span>
+                        </div>
+                        {event.note ? <p>{event.note}</p> : null}
+                      </div>
+                      <button
+                        className="delete-button"
+                        type="button"
+                        aria-label="Termin löschen"
+                        onClick={() => deleteEvent(event.id)}
+                      >
+                        x
+                      </button>
+                    </article>
+                  );
+                })
+              ) : (
+                <div className="empty-state">
+                  <p>Noch keine Termine.</p>
+                  <span>Trage oben deinen ersten Termin ein.</span>
+                </div>
+              )}
+            </section>
+          </section>
         ) : (
           <section className="cosmetics-panel" aria-label="Cosmetics Einstellungen">
             <div className="settings-card">
