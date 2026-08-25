@@ -908,6 +908,360 @@ button {
   font-weight: 820;
 }
 
+button,
+input,
+select {
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.app-root {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--app-accent) 14%, var(--app-bg)) 0%, var(--app-bg) 42%, color-mix(in srgb, #0f8f62 10%, var(--app-bg)) 72%, color-mix(in srgb, #f2a51f 12%, var(--app-bg)) 100%);
+}
+
+.phone-shell {
+  gap: 0.62rem;
+  padding: 0.92rem;
+}
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: -0.2rem -0.1rem 0;
+  border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
+  border-radius: calc(var(--app-radius) + 0.45rem);
+  background: color-mix(in srgb, var(--app-surface) 84%, transparent);
+  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.08);
+  padding: 0.78rem 0.82rem;
+  backdrop-filter: blur(18px);
+}
+
+.eyebrow,
+.hero-kicker {
+  width: fit-content;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--app-accent) 72%, var(--app-ink));
+  font-size: 0.64rem;
+  line-height: 1;
+  padding: 0.32rem 0.48rem;
+}
+
+.app-topbar h1 {
+  margin-top: 0.34rem;
+  font-size: 2.1rem;
+  letter-spacing: 0;
+}
+
+.icon-button {
+  border: 1px solid color-mix(in srgb, var(--app-ink) 10%, transparent);
+  background: color-mix(in srgb, var(--app-ink) 92%, transparent);
+  box-shadow: 0 0.65rem 1.4rem color-mix(in srgb, var(--app-ink) 16%, transparent);
+}
+
+.view-tabs,
+.filters {
+  border-radius: calc(var(--app-radius) + 0.6rem);
+  background: color-mix(in srgb, var(--app-ink) 5%, var(--app-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-ink) 5%, transparent);
+  padding: 0.28rem;
+}
+
+.view-tabs {
+  margin-bottom: 0.35rem;
+}
+
+.view-tabs button.active,
+.filters button.active {
+  background: var(--app-ink);
+  color: var(--app-surface);
+  box-shadow: 0 0.55rem 1.2rem color-mix(in srgb, var(--app-ink) 16%, transparent);
+}
+
+.tomorrow-strip,
+.hero-panel,
+.composer,
+.category-panel,
+.month-card,
+.event-form,
+.settings-card,
+.task-card,
+.event-card,
+.overview-grid article {
+  border-color: color-mix(in srgb, var(--app-ink) 8%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--app-surface) 98%, transparent), color-mix(in srgb, var(--app-surface) 86%, var(--app-bg)));
+  box-shadow:
+    0 1rem 2.2rem rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.tomorrow-strip {
+  position: relative;
+  overflow: hidden;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
+  margin-bottom: 0;
+  padding: 0.82rem;
+}
+
+.tomorrow-strip::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.28rem;
+  background: var(--app-accent);
+  content: "";
+}
+
+.tomorrow-strip h2 {
+  font-size: 1.16rem;
+}
+
+.overview-grid {
+  gap: 0.58rem;
+  margin-bottom: 0.15rem;
+}
+
+.overview-grid article {
+  position: relative;
+  min-height: 4.65rem;
+  overflow: hidden;
+  padding: 0.72rem;
+}
+
+.overview-grid article::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.2rem;
+  background: var(--app-accent);
+  content: "";
+}
+
+.overview-grid article:nth-child(2)::before {
+  background: #0f8f62;
+}
+
+.overview-grid article:nth-child(3)::before {
+  background: #f2a51f;
+}
+
+.overview-grid strong {
+  font-size: 1.58rem;
+}
+
+.hero-panel {
+  position: relative;
+  overflow: hidden;
+  grid-template-columns: minmax(0, 1fr) 5.7rem;
+  min-height: 9rem;
+  padding: 1rem;
+}
+
+.hero-panel::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 0.28rem;
+  background: linear-gradient(90deg, var(--app-accent), #0f8f62, #f2a51f);
+  content: "";
+}
+
+.hero-panel h2 {
+  max-width: 13ch;
+  font-size: 1.78rem;
+}
+
+.progress-ring {
+  width: 5.1rem;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--app-ink) 8%, transparent),
+    0 0.8rem 1.6rem color-mix(in srgb, var(--app-accent) 14%, transparent);
+}
+
+.composer,
+.event-form,
+.settings-card,
+.month-card {
+  padding: 0.82rem;
+}
+
+.category-panel {
+  padding: 0.78rem;
+}
+
+.composer input,
+.composer select,
+.event-form input,
+.event-form select,
+.settings-card input,
+.category-form input,
+.quick-category-form input,
+.category-filter-select,
+.category-editor input {
+  min-height: 2.9rem;
+  border-color: color-mix(in srgb, var(--app-ink) 8%, transparent);
+  background: color-mix(in srgb, var(--app-bg) 52%, var(--app-surface));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.composer input:focus,
+.composer select:focus,
+.event-form input:focus,
+.event-form select:focus,
+.settings-card input:focus,
+.category-form input:focus,
+.quick-category-form input:focus,
+.category-filter-select:focus,
+.category-editor input:focus {
+  border-color: var(--app-accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.44),
+    0 0 0 3px color-mix(in srgb, var(--app-accent) 16%, transparent);
+}
+
+.add-button,
+.wide-button,
+.quick-category-form button,
+.category-form button {
+  background:
+    linear-gradient(135deg, var(--app-accent), color-mix(in srgb, var(--app-accent) 72%, #0f8f62));
+  box-shadow: 0 0.7rem 1.35rem color-mix(in srgb, var(--app-accent) 22%, transparent);
+}
+
+.priority-group,
+.segmented-field > div {
+  background: color-mix(in srgb, var(--app-ink) 5%, var(--app-bg));
+}
+
+.priority-group button.selected,
+.segmented-field button.selected {
+  background: var(--app-accent);
+  color: #fff;
+  box-shadow: 0 0.45rem 1rem color-mix(in srgb, var(--app-accent) 20%, transparent);
+}
+
+.category-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.category-grid button {
+  border-color: color-mix(in srgb, var(--chip) 36%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--chip) 13%, var(--app-surface)), color-mix(in srgb, var(--chip) 7%, var(--app-bg)));
+  font-weight: 900;
+}
+
+.category-grid button.active {
+  box-shadow: 0 0.65rem 1.2rem color-mix(in srgb, var(--chip) 22%, transparent);
+}
+
+.task-list,
+.calendar-panel,
+.event-list,
+.cosmetics-panel {
+  gap: 0.78rem;
+  margin-top: 0.35rem;
+}
+
+.task-card,
+.event-card {
+  border-left-width: 0.42rem;
+}
+
+.task-card {
+  grid-template-columns: 2.65rem minmax(0, 1fr) 2.2rem;
+  min-height: 4.85rem;
+}
+
+.event-card {
+  grid-template-columns: 5.05rem minmax(0, 1fr) 2.2rem;
+}
+
+.check-button {
+  border-width: 1px;
+  background: color-mix(in srgb, var(--category) 10%, var(--app-surface));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--category) 22%, transparent);
+}
+
+.delete-button {
+  background: color-mix(in srgb, var(--app-ink) 5%, transparent);
+}
+
+.month-card {
+  gap: 0.7rem;
+}
+
+.month-toolbar {
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+}
+
+.month-toolbar h2 {
+  font-size: 1.28rem;
+}
+
+.month-toolbar button,
+.today-button {
+  border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
+  background: color-mix(in srgb, var(--app-surface) 72%, var(--app-bg));
+  box-shadow: 0 0.45rem 1rem rgba(0, 0, 0, 0.07);
+}
+
+.weekday-row,
+.month-grid {
+  gap: 0.34rem;
+}
+
+.weekday-row span {
+  font-size: 0.66rem;
+}
+
+.day-cell {
+  min-height: 4.2rem;
+  border-color: color-mix(in srgb, var(--app-ink) 8%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--app-surface) 88%, transparent), color-mix(in srgb, var(--app-bg) 48%, var(--app-surface)));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.day-cell.today {
+  background: color-mix(in srgb, var(--app-accent) 9%, var(--app-surface));
+}
+
+.day-cell.selected {
+  transform: translateY(-1px);
+}
+
+.day-cell span {
+  box-shadow: 0 0.28rem 0.65rem color-mix(in srgb, var(--app-accent) 20%, transparent);
+}
+
+.palette-grid button {
+  min-height: 4rem;
+  border-color: color-mix(in srgb, var(--app-ink) 8%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.palette-grid span {
+  width: 1.28rem;
+  height: 1.28rem;
+}
+
+.reset-button,
+.import-button {
+  box-shadow: 0 0.55rem 1.1rem color-mix(in srgb, var(--app-ink) 10%, transparent);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-accent) 38%, transparent);
+  outline-offset: 2px;
+}
+
 .icon-button:active,
 .add-button:active,
 .wide-button:active,
@@ -952,10 +1306,10 @@ button {
   .phone-shell {
     max-height: 900px;
     min-height: min(900px, calc(100vh - 3rem));
-    border: 1px solid color-mix(in srgb, var(--app-ink) 10%, transparent);
-    border-radius: 2rem;
-    background: color-mix(in srgb, var(--app-bg) 62%, transparent);
-    box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.18);
+    border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
+    border-radius: 2.1rem;
+    background: color-mix(in srgb, var(--app-bg) 78%, transparent);
+    box-shadow: 0 2.5rem 5.5rem rgba(0, 0, 0, 0.2);
   }
 }
 
