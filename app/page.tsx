@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, FormEvent } from "react";
+import type { CSSProperties, ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 type View = "tasks" | "calendar" | "cosmetics";
@@ -52,10 +52,21 @@ type ThemeSettings = {
   density: Density;
 };
 
+type AppBackup = {
+  version: number;
+  savedAt: string;
+  tasks: Partial<Task>[];
+  categories: Partial<Category>[];
+  theme: Partial<ThemeSettings>;
+  events: Partial<CalendarEvent>[];
+};
+
 const taskStorageKey = "pulse-todo-tasks";
 const categoryStorageKey = "pulse-todo-categories";
 const themeStorageKey = "pulse-todo-theme";
 const eventStorageKey = "pulse-calendar-events";
+const backupStorageKey = "pulse-todo-full-backup";
+const backupVersion = 1;
 
 const defaultCategories: Category[] = [
   { id: "cat-personal", name: "Privat", color: "#246bfe" },
@@ -190,6 +201,34 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
+function createBackup(
+  tasks: Task[],
+  categories: Category[],
+  theme: ThemeSettings,
+  events: CalendarEvent[],
+): AppBackup {
+  return {
+    version: backupVersion,
+    savedAt: new Date().toISOString(),
+    tasks,
+    categories,
+    theme,
+    events,
+  };
+}
+
+function normalizeCategories(categories: Partial<Category>[] | undefined) {
+  const cleanCategories = (categories ?? [])
+    .filter((category) => category.name?.trim())
+    .map((category, index) => ({
+      id: category.id ?? `cat-${index}-${Date.now()}`,
+      name: category.name?.trim() ?? "Kategorie",
+      color: category.color ?? defaultCategories[index % defaultCategories.length].color,
+    }));
+
+  return cleanCategories.length ? cleanCategories : defaultCategories;
+}
+
 function normalizeTasks(tasks: Partial<Task>[], categories: Category[]) {
   const fallbackCategory = categories[0]?.id ?? defaultCategories[0].id;
 
@@ -202,6 +241,22 @@ function normalizeTasks(tasks: Partial<Task>[], categories: Category[]) {
     done: Boolean(task.done),
     createdAt: task.createdAt ?? new Date().toISOString(),
     due: task.due ?? "today",
+  }));
+}
+
+function normalizeEvents(
+  events: Partial<CalendarEvent>[] | undefined,
+  categories: Category[],
+) {
+  const fallbackCategory = categories[0]?.id ?? defaultCategories[0].id;
+
+  return (events ?? []).map((event, index) => ({
+    id: event.id ?? `event-${index}-${Date.now()}`,
+    title: event.title ?? "Neuer Termin",
+    date: event.date ?? getDateInputValue(1),
+    time: event.time ?? "",
+    note: event.note ?? "",
+    categoryId: event.categoryId ?? fallbackCategory,
   }));
 }
 
@@ -232,38 +287,32 @@ export default function Home() {
   const [newCategoryColor, setNewCategoryColor] = useState("#246bfe");
   const [filter, setFilter] = useState<Filter>("today");
   const [isReady, setIsReady] = useState(false);
+  const [backupStatus, setBackupStatus] = useState("Automatisch geschützt");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      const savedBackup = readJson<AppBackup | null>(backupStorageKey, null);
       const savedCategories = readJson<Category[]>(
         categoryStorageKey,
-        defaultCategories,
+        normalizeCategories(savedBackup?.categories),
       );
-      const cleanCategories = savedCategories.length
-        ? savedCategories
-        : defaultCategories;
-      const savedTasks = readJson<Partial<Task>[]>(taskStorageKey, starterTasks);
+      const cleanCategories = normalizeCategories(savedCategories);
+      const savedTasks = readJson<Partial<Task>[]>(
+        taskStorageKey,
+        savedBackup?.tasks ?? starterTasks,
+      );
       const savedTheme = readJson<Partial<ThemeSettings>>(
         themeStorageKey,
-        defaultTheme,
+        savedBackup?.theme ?? defaultTheme,
       );
       const savedEvents = readJson<Partial<CalendarEvent>[]>(
         eventStorageKey,
-        [],
+        savedBackup?.events ?? [],
       );
 
       setCategories(cleanCategories);
       setTasks(normalizeTasks(savedTasks, cleanCategories));
-      setEvents(
-        savedEvents.map((event, index) => ({
-          id: event.id ?? `event-${index}-${Date.now()}`,
-          title: event.title ?? "Neuer Termin",
-          date: event.date ?? getDateInputValue(1),
-          time: event.time ?? "",
-          note: event.note ?? "",
-          categoryId: event.categoryId ?? cleanCategories[0].id,
-        })),
-      );
+      setEvents(normalizeEvents(savedEvents, cleanCategories));
       setTheme({ ...defaultTheme, ...savedTheme });
       setTaskCategoryId(cleanCategories[0].id);
       setEventCategoryId(cleanCategories[0].id);
@@ -279,6 +328,10 @@ export default function Home() {
       window.localStorage.setItem(categoryStorageKey, JSON.stringify(categories));
       window.localStorage.setItem(themeStorageKey, JSON.stringify(theme));
       window.localStorage.setItem(eventStorageKey, JSON.stringify(events));
+      window.localStorage.setItem(
+        backupStorageKey,
+        JSON.stringify(createBackup(tasks, categories, theme, events)),
+      );
     }
   }, [categories, events, isReady, tasks, theme]);
 
@@ -474,6 +527,49 @@ export default function Home() {
     setEvents((current) =>
       current.map((event) => ({ ...event, categoryId: defaultCategories[0].id })),
     );
+  }
+
+  function exportBackup() {
+    const backup = createBackup(tasks, categories, theme, events);
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `pulse-tasks-backup-${backup.savedAt.slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setBackupStatus("Backup gespeichert");
+  }
+
+  function importBackup(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const backup = JSON.parse(String(reader.result)) as Partial<AppBackup>;
+        const cleanCategories = normalizeCategories(backup.categories);
+
+        setCategories(cleanCategories);
+        setTasks(normalizeTasks(backup.tasks ?? [], cleanCategories));
+        setEvents(normalizeEvents(backup.events, cleanCategories));
+        setTheme({ ...defaultTheme, ...backup.theme });
+        setTaskCategoryId(cleanCategories[0].id);
+        setEventCategoryId(cleanCategories[0].id);
+        setCategoryFilter("all");
+        setBackupStatus("Backup geladen");
+      } catch {
+        setBackupStatus("Backup konnte nicht geladen werden");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
   }
 
   return (
@@ -1063,6 +1159,28 @@ export default function Home() {
               <button className="reset-button" type="button" onClick={resetCosmetics}>
                 Reset Cosmetics
               </button>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-heading">
+                <p className="hero-kicker">Backup</p>
+                <h2>Daten sichern</h2>
+              </div>
+              <div className="backup-actions">
+                <button className="reset-button" type="button" onClick={exportBackup}>
+                  Backup speichern
+                </button>
+                <label className="import-button">
+                  Backup laden
+                  <input
+                    aria-label="Backup laden"
+                    type="file"
+                    accept="application/json"
+                    onChange={importBackup}
+                  />
+                </label>
+              </div>
+              <p className="backup-status">{backupStatus}</p>
             </div>
           </section>
         )}

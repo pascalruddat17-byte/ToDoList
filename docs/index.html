@@ -119,6 +119,7 @@
       .delete-button,
       .quick-category-form button,
       .category-form button,
+      .import-button,
       .reset-button {
         display: grid;
         place-items: center;
@@ -806,6 +807,38 @@
         font-weight: 900;
       }
 
+      .backup-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+
+      .import-button {
+        min-height: 2.8rem;
+        border-radius: calc(var(--app-radius) * 0.8);
+        background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
+        color: var(--app-ink);
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 900;
+        text-align: center;
+      }
+
+      .import-button input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .backup-status {
+        margin: 0;
+        color: color-mix(in srgb, var(--app-ink) 64%, transparent);
+        font-size: 0.8rem;
+        font-weight: 820;
+      }
+
       .hidden {
         display: none;
       }
@@ -1035,6 +1068,21 @@
             <div class="category-editor" id="categoryEditor"></div>
             <button class="reset-button" type="button" id="resetCosmetics">Reset Cosmetics</button>
           </div>
+
+          <div class="settings-card">
+            <div class="settings-heading">
+              <p class="hero-kicker">Backup</p>
+              <h2>Daten sichern</h2>
+            </div>
+            <div class="backup-actions">
+              <button class="reset-button" type="button" id="exportBackup">Backup speichern</button>
+              <label class="import-button">
+                Backup laden
+                <input id="importBackup" aria-label="Backup laden" type="file" accept="application/json" />
+              </label>
+            </div>
+            <p class="backup-status" id="backupStatus">Automatisch geschuetzt</p>
+          </div>
         </section>
       </section>
     </main>
@@ -1044,6 +1092,8 @@
       const categoryStorageKey = "pulse-todo-categories";
       const themeStorageKey = "pulse-todo-theme";
       const eventStorageKey = "pulse-calendar-events";
+      const backupStorageKey = "pulse-todo-full-backup";
+      const backupVersion = 1;
 
       const defaultCategories = [
         { id: "cat-personal", name: "Privat", color: "#246bfe" },
@@ -1163,36 +1213,6 @@
         });
       }
 
-      let view = "tasks";
-      let filter = "today";
-      let priority = "medium";
-      let categoryFilter = "all";
-      let tasks = readJson(taskStorageKey, starterTasks);
-      let categories = readJson(categoryStorageKey, defaultCategories);
-      let theme = { ...defaultTheme, ...readJson(themeStorageKey, defaultTheme) };
-      let events = readJson(eventStorageKey, []);
-      let calendarCursor = new Date(`${getDateInputValue(0)}T12:00:00`);
-
-      if (!categories.length) categories = defaultCategories;
-      tasks = tasks.map((task, index) => ({
-        id: task.id || `task-${index}-${Date.now()}`,
-        title: task.title || "Neue Aufgabe",
-        note: task.note || "",
-        priority: task.priority || "medium",
-        categoryId: task.categoryId || categories[0].id,
-        done: Boolean(task.done),
-        createdAt: task.createdAt || new Date().toISOString(),
-        due: task.due || "today",
-      }));
-      events = events.map((event, index) => ({
-        id: event.id || `event-${index}-${Date.now()}`,
-        title: event.title || "Neuer Termin",
-        date: event.date || getDateInputValue(1),
-        time: event.time || "",
-        note: event.note || "",
-        categoryId: event.categoryId || categories[0].id,
-      }));
-
       function readJson(key, fallback) {
         const saved = localStorage.getItem(key);
         if (!saved) return fallback;
@@ -1203,12 +1223,83 @@
         }
       }
 
+      function createBackup() {
+        return {
+          version: backupVersion,
+          savedAt: new Date().toISOString(),
+          tasks,
+          categories,
+          theme,
+          events,
+        };
+      }
+
+      function normalizeCategories(items) {
+        const cleanCategories = (Array.isArray(items) ? items : [])
+          .filter((category) => category && String(category.name || "").trim())
+          .map((category, index) => ({
+            id: category.id || `cat-${index}-${Date.now()}`,
+            name: String(category.name || "Kategorie").trim(),
+            color: category.color || defaultCategories[index % defaultCategories.length].color,
+          }));
+
+        return cleanCategories.length ? cleanCategories : defaultCategories.map((category) => ({ ...category }));
+      }
+
+      function normalizeTasks(items, cleanCategories) {
+        const fallbackCategory = cleanCategories[0].id;
+
+        return (Array.isArray(items) ? items : []).map((task, index) => ({
+          id: task.id || `task-${index}-${Date.now()}`,
+          title: task.title || "Neue Aufgabe",
+          note: task.note || "",
+          priority: task.priority || "medium",
+          categoryId: task.categoryId || fallbackCategory,
+          done: Boolean(task.done),
+          createdAt: task.createdAt || new Date().toISOString(),
+          due: task.due || "today",
+        }));
+      }
+
+      function normalizeEvents(items, cleanCategories) {
+        const fallbackCategory = cleanCategories[0].id;
+
+        return (Array.isArray(items) ? items : []).map((event, index) => ({
+          id: event.id || `event-${index}-${Date.now()}`,
+          title: event.title || "Neuer Termin",
+          date: event.date || getDateInputValue(1),
+          time: event.time || "",
+          note: event.note || "",
+          categoryId: event.categoryId || fallbackCategory,
+        }));
+      }
+
       function saveAll() {
         localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
         localStorage.setItem(categoryStorageKey, JSON.stringify(categories));
         localStorage.setItem(themeStorageKey, JSON.stringify(theme));
         localStorage.setItem(eventStorageKey, JSON.stringify(events));
+        localStorage.setItem(backupStorageKey, JSON.stringify(createBackup()));
       }
+
+      const savedBackup = readJson(backupStorageKey, null);
+      let view = "tasks";
+      let filter = "today";
+      let priority = "medium";
+      let categoryFilter = "all";
+      let tasks = readJson(taskStorageKey, savedBackup?.tasks || starterTasks);
+      let categories = normalizeCategories(
+        readJson(categoryStorageKey, savedBackup?.categories || defaultCategories),
+      );
+      let theme = {
+        ...defaultTheme,
+        ...readJson(themeStorageKey, savedBackup?.theme || defaultTheme),
+      };
+      let events = readJson(eventStorageKey, savedBackup?.events || []);
+      let calendarCursor = new Date(`${getDateInputValue(0)}T12:00:00`);
+
+      tasks = normalizeTasks(tasks, categories);
+      events = normalizeEvents(events, categories);
 
       function $(id) {
         return document.getElementById(id);
@@ -1565,6 +1656,46 @@
         });
       }
 
+      function setBackupStatus(text) {
+        $("backupStatus").textContent = text;
+      }
+
+      function exportBackup() {
+        const backup = createBackup();
+        const blob = new Blob([JSON.stringify(backup, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `pulse-tasks-backup-${backup.savedAt.slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        setBackupStatus("Backup gespeichert");
+      }
+
+      function importBackup(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const backup = JSON.parse(String(reader.result));
+            const cleanCategories = normalizeCategories(backup.categories);
+
+            categories = cleanCategories;
+            tasks = normalizeTasks(backup.tasks || [], cleanCategories);
+            events = normalizeEvents(backup.events || [], cleanCategories);
+            theme = { ...defaultTheme, ...(backup.theme || {}) };
+            categoryFilter = "all";
+            saveAll();
+            render();
+            setBackupStatus("Backup geladen");
+          } catch {
+            setBackupStatus("Backup konnte nicht geladen werden");
+          }
+        };
+        reader.readAsText(file);
+      }
+
       function renderPalettes() {
         const grid = $("paletteGrid");
         grid.replaceChildren();
@@ -1798,6 +1929,14 @@
         categoryFilter = "all";
         saveAll();
         render();
+      });
+
+      $("exportBackup").addEventListener("click", exportBackup);
+
+      $("importBackup").addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) importBackup(file);
+        event.target.value = "";
       });
 
       if ("serviceWorker" in navigator) {

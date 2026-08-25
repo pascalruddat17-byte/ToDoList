@@ -98,6 +98,7 @@ button {
 .delete-button,
 .category-form button,
 .quick-category-form button,
+.import-button,
 .reset-button {
   display: grid;
   place-items: center;
@@ -867,6 +868,38 @@ button {
   font-weight: 900;
 }
 
+.backup-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.import-button {
+  min-height: 2.8rem;
+  border-radius: calc(var(--app-radius) * 0.8);
+  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
+  color: var(--app-ink);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.import-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.backup-status {
+  margin: 0;
+  color: color-mix(in srgb, var(--app-ink) 64%, transparent);
+  font-size: 0.8rem;
+  font-weight: 820;
+}
+
 .icon-button:active,
 .add-button:active,
 .wide-button:active,
@@ -883,6 +916,7 @@ button {
 .quick-category-form button:active,
 .category-form button:active,
 .category-editor button:active,
+.import-button:active,
 .reset-button:active {
   transform: translateY(1px);
 }
