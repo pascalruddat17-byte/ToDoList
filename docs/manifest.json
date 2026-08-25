@@ -8,20 +8,6 @@
   "background_color": "#f5f4ee",
   "theme_color": "#171a1f",
   "orientation": "portrait",
-  "shortcuts": [
-    {
-      "name": "Aufgaben Widget",
-      "short_name": "Aufgaben",
-      "description": "Kompakte Aufgabenansicht nach ausgewählten Kategorien.",
-      "url": "./?widget=tasks"
-    },
-    {
-      "name": "Morgen Termine",
-      "short_name": "Morgen",
-      "description": "Kompakte Ansicht der Termine, die morgen anstehen.",
-      "url": "./?widget=tomorrow"
-    }
-  ],
   "icons": [
     {
       "src": "favicon.svg",

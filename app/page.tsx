@@ -4,7 +4,6 @@ import type { CSSProperties, ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 type View = "tasks" | "calendar" | "cosmetics";
-type WidgetMode = "app" | "tasks" | "tomorrow";
 type Filter = "today" | "all" | "done";
 type Priority = "low" | "medium" | "high";
 type Radius = "sharp" | "soft" | "round";
@@ -60,7 +59,6 @@ type AppBackup = {
   categories: Partial<Category>[];
   theme: Partial<ThemeSettings>;
   events: Partial<CalendarEvent>[];
-  widgetCategoryIds?: string[];
 };
 
 const taskStorageKey = "pulse-todo-tasks";
@@ -68,7 +66,6 @@ const categoryStorageKey = "pulse-todo-categories";
 const themeStorageKey = "pulse-todo-theme";
 const eventStorageKey = "pulse-calendar-events";
 const backupStorageKey = "pulse-todo-full-backup";
-const widgetCategoryStorageKey = "pulse-widget-categories";
 const backupVersion = 1;
 
 const defaultCategories: Category[] = [
@@ -244,7 +241,6 @@ function createBackup(
   categories: Category[],
   theme: ThemeSettings,
   events: CalendarEvent[],
-  widgetCategoryIds: string[],
 ): AppBackup {
   return {
     version: backupVersion,
@@ -253,7 +249,6 @@ function createBackup(
     categories,
     theme,
     events,
-    widgetCategoryIds,
   };
 }
 
@@ -284,13 +279,6 @@ function normalizeTasks(tasks: Partial<Task>[], categories: Category[]) {
   }));
 }
 
-function normalizeWidgetCategoryIds(ids: string[] | undefined, categories: Category[]) {
-  const validIds = new Set(categories.map((category) => category.id));
-  const cleanIds = (ids ?? []).filter((id) => validIds.has(id));
-
-  return cleanIds.length ? cleanIds : categories.map((category) => category.id);
-}
-
 function normalizeEvents(
   events: Partial<CalendarEvent>[] | undefined,
   categories: Category[],
@@ -313,7 +301,6 @@ function findCategory(categories: Category[], id: string) {
 
 export default function Home() {
   const [view, setView] = useState<View>("tasks");
-  const [widgetMode, setWidgetMode] = useState<WidgetMode>("app");
   const [tasks, setTasks] = useState<Task[]>(starterTasks);
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [theme, setTheme] = useState<ThemeSettings>(defaultTheme);
@@ -337,18 +324,9 @@ export default function Home() {
   const [filter, setFilter] = useState<Filter>("today");
   const [isReady, setIsReady] = useState(false);
   const [backupStatus, setBackupStatus] = useState("Automatisch geschützt");
-  const [widgetCategoryIds, setWidgetCategoryIds] = useState<string[]>(
-    defaultCategories.map((category) => category.id),
-  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const mode = new URLSearchParams(window.location.search).get("widget");
-
-      if (mode === "tasks" || mode === "tomorrow") {
-        setWidgetMode(mode);
-      }
-
       const savedBackup = readJson<AppBackup | null>(backupStorageKey, null);
       const savedCategories = readJson<Category[]>(
         categoryStorageKey,
@@ -367,10 +345,6 @@ export default function Home() {
         eventStorageKey,
         savedBackup?.events ?? [],
       );
-      const savedWidgetCategoryIds = readJson<string[]>(
-        widgetCategoryStorageKey,
-        savedBackup?.widgetCategoryIds ?? cleanCategories.map((category) => category.id),
-      );
 
       setCategories(cleanCategories);
       setTasks(normalizeTasks(savedTasks, cleanCategories));
@@ -378,9 +352,6 @@ export default function Home() {
       setTheme({ ...defaultTheme, ...savedTheme });
       setTaskCategoryId(cleanCategories[0].id);
       setEventCategoryId(cleanCategories[0].id);
-      setWidgetCategoryIds(
-        normalizeWidgetCategoryIds(savedWidgetCategoryIds, cleanCategories),
-      );
       setIsReady(true);
     }, 0);
 
@@ -394,17 +365,11 @@ export default function Home() {
       window.localStorage.setItem(themeStorageKey, JSON.stringify(theme));
       window.localStorage.setItem(eventStorageKey, JSON.stringify(events));
       window.localStorage.setItem(
-        widgetCategoryStorageKey,
-        JSON.stringify(widgetCategoryIds),
-      );
-      window.localStorage.setItem(
         backupStorageKey,
-        JSON.stringify(
-          createBackup(tasks, categories, theme, events, widgetCategoryIds),
-        ),
+        JSON.stringify(createBackup(tasks, categories, theme, events)),
       );
     }
-  }, [categories, events, isReady, tasks, theme, widgetCategoryIds]);
+  }, [categories, events, isReady, tasks, theme]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -448,22 +413,6 @@ export default function Home() {
     const tomorrow = getDateInputValue(1);
     return sortedEvents.filter((event) => event.date === tomorrow);
   }, [sortedEvents]);
-
-  const widgetTasks = useMemo(() => {
-    const chosenIds = new Set(
-      normalizeWidgetCategoryIds(widgetCategoryIds, categories),
-    );
-    const priorityRank: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
-
-    return [...tasks]
-      .filter((task) => !task.done && chosenIds.has(task.categoryId))
-      .sort(
-        (first, second) =>
-          priorityRank[first.priority] - priorityRank[second.priority] ||
-          first.createdAt.localeCompare(second.createdAt),
-      )
-      .slice(0, 6);
-  }, [categories, tasks, widgetCategoryIds]);
 
   const calendarDays = useMemo(
     () => getMonthDays(calendarCursor, sortedEvents),
@@ -594,9 +543,6 @@ export default function Home() {
     const nextCategories = categories.filter((category) => category.id !== id);
 
     setCategories(nextCategories);
-    setWidgetCategoryIds((current) =>
-      normalizeWidgetCategoryIds(current, nextCategories),
-    );
     setTasks((current) =>
       current.map((task) =>
         task.categoryId === id ? { ...task, categoryId: fallbackId } : task,
@@ -617,7 +563,6 @@ export default function Home() {
     setCategories(defaultCategories);
     setTaskCategoryId(defaultCategories[0].id);
     setCategoryFilter("all");
-    setWidgetCategoryIds(defaultCategories.map((category) => category.id));
     setTasks((current) =>
       current.map((task) => ({ ...task, categoryId: defaultCategories[0].id })),
     );
@@ -626,30 +571,8 @@ export default function Home() {
     );
   }
 
-  function toggleWidgetCategory(id: string) {
-    setWidgetCategoryIds((current) => {
-      const cleanIds = normalizeWidgetCategoryIds(current, categories);
-
-      if (cleanIds.includes(id) && cleanIds.length > 1) {
-        return cleanIds.filter((categoryId) => categoryId !== id);
-      }
-
-      if (cleanIds.includes(id)) {
-        return cleanIds;
-      }
-
-      return [...cleanIds, id];
-    });
-  }
-
   function exportBackup() {
-    const backup = createBackup(
-      tasks,
-      categories,
-      theme,
-      events,
-      widgetCategoryIds,
-    );
+    const backup = createBackup(tasks, categories, theme, events);
     const blob = new Blob([JSON.stringify(backup, null, 2)], {
       type: "application/json",
     });
@@ -682,9 +605,6 @@ export default function Home() {
         setTaskCategoryId(cleanCategories[0].id);
         setEventCategoryId(cleanCategories[0].id);
         setCategoryFilter("all");
-        setWidgetCategoryIds(
-          normalizeWidgetCategoryIds(backup.widgetCategoryIds, cleanCategories),
-        );
         setBackupStatus("Backup geladen");
       } catch {
         setBackupStatus("Backup konnte nicht geladen werden");
@@ -692,96 +612,6 @@ export default function Home() {
     };
     reader.readAsText(file);
     event.target.value = "";
-  }
-
-  if (widgetMode !== "app") {
-    const selectedWidgetCategories = categories.filter((category) =>
-      normalizeWidgetCategoryIds(widgetCategoryIds, categories).includes(category.id),
-    );
-
-    return (
-      <main className="app-root widget-root" style={appStyle}>
-        <section className="widget-shell">
-          <header className="widget-header">
-            <div>
-              <p className="hero-kicker">Widget</p>
-              <h1>{widgetMode === "tasks" ? "Aufgaben" : "Morgen"}</h1>
-            </div>
-            <a href="./" aria-label="App öffnen">
-              App
-            </a>
-          </header>
-
-          {widgetMode === "tasks" ? (
-            <>
-              <div className="widget-category-row" aria-label="Ausgewählte Kategorien">
-                {selectedWidgetCategories.map((category) => (
-                  <span
-                    key={category.id}
-                    style={
-                      {
-                        "--chip": category.color,
-                        "--chip-contrast": getReadableTextColor(category.color),
-                      } as CSSProperties
-                    }
-                  >
-                    {category.name}
-                  </span>
-                ))}
-              </div>
-
-              <section className="widget-list" aria-label="Widget Aufgaben">
-                {widgetTasks.length ? (
-                  widgetTasks.map((task) => {
-                    const category = findCategory(categories, task.categoryId);
-
-                    return (
-                      <article
-                        className="widget-item"
-                        key={task.id}
-                        style={{ "--category": category.color } as CSSProperties}
-                      >
-                        <strong>{task.title}</strong>
-                        <span>{category.name}</span>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <div className="widget-empty">
-                    <strong>Nichts offen</strong>
-                    <span>Für diese Kategorien ist alles erledigt.</span>
-                  </div>
-                )}
-              </section>
-            </>
-          ) : (
-            <section className="widget-list" aria-label="Morgige Termine">
-              {tomorrowEvents.length ? (
-                tomorrowEvents.map((event) => {
-                  const category = findCategory(categories, event.categoryId);
-
-                  return (
-                    <article
-                      className="widget-item event"
-                      key={event.id}
-                      style={{ "--category": category.color } as CSSProperties}
-                    >
-                      <strong>{event.title}</strong>
-                      <span>{event.time || "Ganztags"} · {category.name}</span>
-                    </article>
-                  );
-                })
-              ) : (
-                <div className="widget-empty">
-                  <strong>Morgen frei</strong>
-                  <span>Keine Termine eingetragen.</span>
-                </div>
-              )}
-            </section>
-          )}
-        </section>
-      </main>
-    );
   }
 
   return (
@@ -1394,39 +1224,6 @@ export default function Home() {
               <button className="reset-button" type="button" onClick={resetCosmetics}>
                 Reset Cosmetics
               </button>
-            </div>
-
-            <div className="settings-card">
-              <div className="settings-heading">
-                <p className="hero-kicker">Homescreen</p>
-                <h2>Widget Auswahl</h2>
-              </div>
-              <div className="widget-category-picker">
-                {categories.map((category) => {
-                  const checked = normalizeWidgetCategoryIds(
-                    widgetCategoryIds,
-                    categories,
-                  ).includes(category.id);
-
-                  return (
-                    <label
-                      key={category.id}
-                      style={{ "--chip": category.color } as CSSProperties}
-                    >
-                      <input
-                        checked={checked}
-                        type="checkbox"
-                        onChange={() => toggleWidgetCategory(category.id)}
-                      />
-                      <span>{category.name}</span>
-                    </label>
-                  );
-                })}
-              </div>
-              <div className="widget-link-grid">
-                <a href="./?widget=tasks">Aufgaben Widget</a>
-                <a href="./?widget=tomorrow">Morgen Widget</a>
-              </div>
             </div>
 
             <div className="settings-card">

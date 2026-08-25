@@ -876,139 +876,6 @@ button {
   font-weight: 900;
 }
 
-.widget-root {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 0.9rem;
-}
-
-.widget-shell {
-  display: grid;
-  gap: 0.72rem;
-  width: min(100%, 390px);
-  min-height: 18rem;
-  border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
-  border-radius: calc(var(--app-radius) + 0.7rem);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--app-surface) 96%, transparent), color-mix(in srgb, var(--app-surface) 84%, var(--app-bg)));
-  box-shadow:
-    0 1.4rem 3rem rgba(0, 0, 0, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42);
-  padding: 1rem;
-}
-
-.widget-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.widget-header h1 {
-  margin: 0.34rem 0 0;
-  font-size: 2rem;
-  font-weight: 950;
-  line-height: 0.95;
-}
-
-.widget-header a,
-.widget-link-grid a {
-  display: grid;
-  min-height: 2.65rem;
-  place-items: center;
-  border-radius: calc(var(--app-radius) * 0.78);
-  background: var(--app-accent);
-  color: var(--app-accent-contrast);
-  font-size: 0.88rem;
-  font-weight: 920;
-  text-decoration: none;
-}
-
-.widget-category-row,
-.widget-category-picker,
-.widget-link-grid {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.widget-category-row {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.widget-category-row span,
-.widget-category-picker label {
-  --chip: var(--app-accent);
-  border: 1px solid color-mix(in srgb, var(--chip) 34%, transparent);
-  border-radius: calc(var(--app-radius) * 0.72);
-  background: color-mix(in srgb, var(--chip) 12%, var(--app-surface));
-  color: var(--app-ink);
-  font-size: 0.76rem;
-  font-weight: 880;
-  padding: 0.48rem 0.58rem;
-}
-
-.widget-category-picker {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.widget-category-picker label {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.widget-category-picker input {
-  width: 1rem;
-  min-height: 1rem;
-  accent-color: var(--chip);
-}
-
-.widget-link-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.widget-list {
-  display: grid;
-  align-content: start;
-  gap: 0.55rem;
-}
-
-.widget-item,
-.widget-empty {
-  --category: var(--app-accent);
-  display: grid;
-  gap: 0.16rem;
-  min-height: 3.7rem;
-  border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
-  border-left: 0.36rem solid var(--category);
-  border-radius: var(--app-radius);
-  background: color-mix(in srgb, var(--app-surface) 92%, transparent);
-  box-shadow: 0 0.7rem 1.35rem rgba(0, 0, 0, 0.08);
-  padding: 0.68rem;
-}
-
-.widget-item strong,
-.widget-empty strong {
-  font-size: 0.98rem;
-  font-weight: 940;
-  line-height: 1.12;
-  overflow-wrap: anywhere;
-}
-
-.widget-item span,
-.widget-empty span {
-  color: color-mix(in srgb, var(--app-ink) 62%, transparent);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.widget-empty {
-  min-height: 8rem;
-  place-content: center;
-  text-align: center;
-}
-
 .backup-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1395,13 +1262,6 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
-.widget-category-picker input {
-  width: 1rem;
-  min-height: 1rem;
-  padding: 0;
-  box-shadow: none;
-}
-
 .app-root {
   color: var(--app-bg-contrast);
 }
@@ -1417,10 +1277,7 @@ select:focus-visible {
 .settings-card,
 .task-card,
 .event-card,
-.empty-state,
-.widget-shell,
-.widget-item,
-.widget-empty {
+.empty-state {
   color: var(--app-surface-contrast);
 }
 
@@ -1432,10 +1289,7 @@ select:focus-visible {
 .category-panel-head h2,
 .task-line h3,
 .event-date strong,
-.empty-state p,
-.widget-header h1,
-.widget-item strong,
-.widget-empty strong {
+.empty-state p {
   color: var(--app-surface-contrast);
 }
 
@@ -1453,9 +1307,7 @@ select:focus-visible {
 .empty-state span,
 .settings-card label,
 .segmented-field > span,
-.backup-status,
-.widget-item span,
-.widget-empty span {
+.backup-status {
   color: color-mix(in srgb, var(--app-surface-contrast) 68%, transparent);
 }
 
@@ -1472,9 +1324,7 @@ select:focus-visible {
 .today-button,
 .palette-grid button,
 .category-editor button,
-.delete-button,
-.widget-category-picker label,
-.widget-category-row span {
+.delete-button {
   color: var(--app-surface-contrast);
 }
 
@@ -1505,9 +1355,7 @@ select:focus-visible {
 .quick-category-form button,
 .category-form button,
 .priority-group button.selected,
-.segmented-field button.selected,
-.widget-header a,
-.widget-link-grid a {
+.segmented-field button.selected {
   color: var(--app-accent-contrast);
 }
 
