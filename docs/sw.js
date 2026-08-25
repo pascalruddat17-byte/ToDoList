@@ -1,4 +1,4 @@
-const cacheName = "pulse-tasks-v9";
+const cacheName = "pulse-tasks-v10";
 const files = ["./", "./index.html", "./manifest.json", "./favicon.svg"];
 
 self.addEventListener("install", (event) => {

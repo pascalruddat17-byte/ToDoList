@@ -816,6 +816,133 @@
         font-weight: 900;
       }
 
+      .widget-root {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 0.9rem;
+      }
+
+      .widget-shell {
+        display: grid;
+        gap: 0.72rem;
+        width: min(100%, 390px);
+        min-height: 18rem;
+        border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
+        border-radius: calc(var(--app-radius) + 0.7rem);
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--app-surface) 96%, transparent), color-mix(in srgb, var(--app-surface) 84%, var(--app-bg)));
+        box-shadow:
+          0 1.4rem 3rem rgba(0, 0, 0, 0.16),
+          inset 0 1px 0 rgba(255, 255, 255, 0.42);
+        padding: 1rem;
+      }
+
+      .widget-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .widget-header h1 {
+        margin: 0.34rem 0 0;
+        font-size: 2rem;
+        font-weight: 950;
+        line-height: 0.95;
+      }
+
+      .widget-header a,
+      .widget-link-grid a {
+        display: grid;
+        min-height: 2.65rem;
+        place-items: center;
+        border-radius: calc(var(--app-radius) * 0.78);
+        background: var(--app-accent);
+        color: var(--app-accent-contrast);
+        font-size: 0.88rem;
+        font-weight: 920;
+        text-decoration: none;
+      }
+
+      .widget-category-row,
+      .widget-category-picker,
+      .widget-link-grid {
+        display: grid;
+        gap: 0.45rem;
+      }
+
+      .widget-category-row,
+      .widget-category-picker,
+      .widget-link-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .widget-category-row span,
+      .widget-category-picker label {
+        --chip: var(--app-accent);
+        border: 1px solid color-mix(in srgb, var(--chip) 34%, transparent);
+        border-radius: calc(var(--app-radius) * 0.72);
+        background: color-mix(in srgb, var(--chip) 12%, var(--app-surface));
+        color: var(--app-ink);
+        font-size: 0.76rem;
+        font-weight: 880;
+        padding: 0.48rem 0.58rem;
+      }
+
+      .widget-category-picker label {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .widget-category-picker input {
+        width: 1rem;
+        min-height: 1rem;
+        accent-color: var(--chip);
+      }
+
+      .widget-list {
+        display: grid;
+        align-content: start;
+        gap: 0.55rem;
+      }
+
+      .widget-item,
+      .widget-empty {
+        --category: var(--app-accent);
+        display: grid;
+        gap: 0.16rem;
+        min-height: 3.7rem;
+        border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
+        border-left: 0.36rem solid var(--category);
+        border-radius: var(--app-radius);
+        background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+        box-shadow: 0 0.7rem 1.35rem rgba(0, 0, 0, 0.08);
+        padding: 0.68rem;
+      }
+
+      .widget-item strong,
+      .widget-empty strong {
+        font-size: 0.98rem;
+        font-weight: 940;
+        line-height: 1.12;
+        overflow-wrap: anywhere;
+      }
+
+      .widget-item span,
+      .widget-empty span {
+        color: color-mix(in srgb, var(--app-ink) 62%, transparent);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .widget-empty {
+        min-height: 8rem;
+        place-content: center;
+        text-align: center;
+      }
+
       .backup-actions {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1188,6 +1315,13 @@
         outline-offset: 2px;
       }
 
+      .widget-category-picker input {
+        width: 1rem;
+        min-height: 1rem;
+        padding: 0;
+        box-shadow: none;
+      }
+
       .hidden {
         display: none;
       }
@@ -1233,7 +1367,19 @@
   </head>
   <body>
     <main class="app-root" id="appRoot">
-      <section class="phone-shell">
+      <section class="widget-shell hidden" id="widgetView" aria-label="Homescreen Widget">
+        <header class="widget-header">
+          <div>
+            <p class="hero-kicker">Widget</p>
+            <h1 id="widgetTitle">Aufgaben</h1>
+          </div>
+          <a href="./" aria-label="App oeffnen">App</a>
+        </header>
+        <div class="widget-category-row" id="widgetCategoryRow"></div>
+        <section class="widget-list" id="widgetList"></section>
+      </section>
+
+      <section class="phone-shell" id="phoneShell">
         <header class="app-topbar">
           <div>
             <p class="eyebrow" id="viewLabel">Heute</p>
@@ -1420,6 +1566,18 @@
 
           <div class="settings-card">
             <div class="settings-heading">
+              <p class="hero-kicker">Homescreen</p>
+              <h2>Widget Auswahl</h2>
+            </div>
+            <div class="widget-category-picker" id="widgetCategoryPicker"></div>
+            <div class="widget-link-grid">
+              <a href="./?widget=tasks">Aufgaben Widget</a>
+              <a href="./?widget=tomorrow">Morgen Widget</a>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-heading">
               <p class="hero-kicker">Backup</p>
               <h2>Daten sichern</h2>
             </div>
@@ -1442,6 +1600,7 @@
       const themeStorageKey = "pulse-todo-theme";
       const eventStorageKey = "pulse-calendar-events";
       const backupStorageKey = "pulse-todo-full-backup";
+      const widgetCategoryStorageKey = "pulse-widget-categories";
       const backupVersion = 1;
 
       const defaultCategories = [
@@ -1612,6 +1771,7 @@
           categories,
           theme,
           events,
+          widgetCategoryIds,
         };
       }
 
@@ -1642,6 +1802,15 @@
         }));
       }
 
+      function normalizeWidgetCategoryIds(ids, cleanCategories) {
+        const validIds = new Set(cleanCategories.map((category) => category.id));
+        const cleanIds = (Array.isArray(ids) ? ids : []).filter((id) =>
+          validIds.has(id),
+        );
+
+        return cleanIds.length ? cleanIds : cleanCategories.map((category) => category.id);
+      }
+
       function normalizeEvents(items, cleanCategories) {
         const fallbackCategory = cleanCategories[0].id;
 
@@ -1660,11 +1829,14 @@
         localStorage.setItem(categoryStorageKey, JSON.stringify(categories));
         localStorage.setItem(themeStorageKey, JSON.stringify(theme));
         localStorage.setItem(eventStorageKey, JSON.stringify(events));
+        localStorage.setItem(widgetCategoryStorageKey, JSON.stringify(widgetCategoryIds));
         localStorage.setItem(backupStorageKey, JSON.stringify(createBackup()));
       }
 
       const savedBackup = readJson(backupStorageKey, null);
+      const widgetParam = new URLSearchParams(window.location.search).get("widget");
       let view = "tasks";
+      let widgetMode = widgetParam === "tasks" || widgetParam === "tomorrow" ? widgetParam : "app";
       let filter = "today";
       let priority = "medium";
       let categoryFilter = "all";
@@ -1679,9 +1851,14 @@
       let events = readJson(eventStorageKey, savedBackup?.events || []);
       let calendarCursor = new Date(`${getDateInputValue(0)}T12:00:00`);
       let selectedDate = getDateInputValue(0);
+      let widgetCategoryIds = readJson(
+        widgetCategoryStorageKey,
+        savedBackup?.widgetCategoryIds || categories.map((category) => category.id),
+      );
 
       tasks = normalizeTasks(tasks, categories);
       events = normalizeEvents(events, categories);
+      widgetCategoryIds = normalizeWidgetCategoryIds(widgetCategoryIds, categories);
 
       function $(id) {
         return document.getElementById(id);
@@ -2006,6 +2183,114 @@
         });
       }
 
+      function widgetTasks() {
+        const chosenIds = new Set(normalizeWidgetCategoryIds(widgetCategoryIds, categories));
+        const priorityRank = { high: 0, medium: 1, low: 2 };
+
+        return [...tasks]
+          .filter((task) => !task.done && chosenIds.has(task.categoryId))
+          .sort(
+            (first, second) =>
+              priorityRank[first.priority] - priorityRank[second.priority] ||
+              first.createdAt.localeCompare(second.createdAt),
+          )
+          .slice(0, 6);
+      }
+
+      function renderWidget() {
+        if (widgetMode === "app") return;
+
+        $("widgetTitle").textContent = widgetMode === "tasks" ? "Aufgaben" : "Morgen";
+
+        const categoryRow = $("widgetCategoryRow");
+        const list = $("widgetList");
+        categoryRow.replaceChildren();
+        list.replaceChildren();
+
+        if (widgetMode === "tasks") {
+          categoryRow.classList.remove("hidden");
+          categories
+            .filter((category) =>
+              normalizeWidgetCategoryIds(widgetCategoryIds, categories).includes(category.id),
+            )
+            .forEach((category) => {
+              const chip = document.createElement("span");
+              chip.textContent = category.name;
+              chip.style.setProperty("--chip", category.color);
+              chip.style.setProperty("--chip-contrast", getReadableTextColor(category.color));
+              categoryRow.append(chip);
+            });
+
+          const items = widgetTasks();
+          if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "widget-empty";
+            empty.innerHTML = "<strong>Nichts offen</strong><span>Fuer diese Kategorien ist alles erledigt.</span>";
+            list.append(empty);
+            return;
+          }
+
+          items.forEach((task) => {
+            const category = findCategory(task.categoryId);
+            const item = document.createElement("article");
+            item.className = "widget-item";
+            item.style.setProperty("--category", category.color);
+            const title = document.createElement("strong");
+            title.textContent = task.title;
+            const meta = document.createElement("span");
+            meta.textContent = category.name;
+            item.append(title, meta);
+            list.append(item);
+          });
+          return;
+        }
+
+        categoryRow.classList.add("hidden");
+        const items = tomorrowEvents();
+        if (!items.length) {
+          const empty = document.createElement("div");
+          empty.className = "widget-empty";
+          empty.innerHTML = "<strong>Morgen frei</strong><span>Keine Termine eingetragen.</span>";
+          list.append(empty);
+          return;
+        }
+
+        items.forEach((event) => {
+          const category = findCategory(event.categoryId);
+          const item = document.createElement("article");
+          item.className = "widget-item";
+          item.style.setProperty("--category", category.color);
+          const title = document.createElement("strong");
+          title.textContent = event.title;
+          const meta = document.createElement("span");
+          meta.textContent = `${event.time || "Ganztags"} · ${category.name}`;
+          item.append(title, meta);
+          list.append(item);
+        });
+      }
+
+      function renderWidgetSettings() {
+        const picker = $("widgetCategoryPicker");
+        picker.replaceChildren();
+
+        categories.forEach((category) => {
+          const label = document.createElement("label");
+          label.style.setProperty("--chip", category.color);
+
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.checked = normalizeWidgetCategoryIds(widgetCategoryIds, categories).includes(category.id);
+          input.addEventListener("change", () => {
+            toggleWidgetCategory(category.id);
+          });
+
+          const name = document.createElement("span");
+          name.textContent = category.name;
+          label.append(input, name);
+          picker.append(label);
+        });
+      }
+
       function renderCosmetics() {
         $("themeAppName").value = theme.appName;
         $("themeAccent").value = theme.accent;
@@ -2073,6 +2358,10 @@
             tasks = normalizeTasks(backup.tasks || [], cleanCategories);
             events = normalizeEvents(backup.events || [], cleanCategories);
             theme = { ...defaultTheme, ...(backup.theme || {}) };
+            widgetCategoryIds = normalizeWidgetCategoryIds(
+              backup.widgetCategoryIds,
+              cleanCategories,
+            );
             categoryFilter = "all";
             saveAll();
             render();
@@ -2114,6 +2403,10 @@
       }
 
       function renderView() {
+        $("phoneShell").classList.toggle("hidden", widgetMode !== "app");
+        $("widgetView").classList.toggle("hidden", widgetMode === "app");
+        $("appRoot").classList.toggle("widget-root", widgetMode !== "app");
+
         document.querySelectorAll("[data-view]").forEach((button) => {
           button.classList.toggle("active", button.dataset.view === view);
         });
@@ -2146,6 +2439,8 @@
         renderTasks();
         renderCalendar();
         renderCosmetics();
+        renderWidget();
+        renderWidgetSettings();
         renderPalettes();
         renderSegmented("radiusGroup", ["sharp", "soft", "round"], theme.radius, (value) => {
           theme.radius = value;
@@ -2177,6 +2472,7 @@
         if (categories.length <= 1) return;
         const fallback = categories.find((category) => category.id !== id);
         categories = categories.filter((category) => category.id !== id);
+        widgetCategoryIds = normalizeWidgetCategoryIds(widgetCategoryIds, categories);
         tasks = tasks.map((task) =>
           task.categoryId === id ? { ...task, categoryId: fallback.id } : task,
         );
@@ -2184,6 +2480,21 @@
           event.categoryId === id ? { ...event, categoryId: fallback.id } : event,
         );
         if (categoryFilter === id) categoryFilter = "all";
+        saveAll();
+        render();
+      }
+
+      function toggleWidgetCategory(id) {
+        const cleanIds = normalizeWidgetCategoryIds(widgetCategoryIds, categories);
+
+        if (cleanIds.includes(id) && cleanIds.length > 1) {
+          widgetCategoryIds = cleanIds.filter((categoryId) => categoryId !== id);
+        } else if (!cleanIds.includes(id)) {
+          widgetCategoryIds = [...cleanIds, id];
+        } else {
+          widgetCategoryIds = cleanIds;
+        }
+
         saveAll();
         render();
       }
@@ -2320,6 +2631,7 @@
       $("resetCosmetics").addEventListener("click", () => {
         theme = { ...defaultTheme };
         categories = defaultCategories.map((category) => ({ ...category }));
+        widgetCategoryIds = categories.map((category) => category.id);
         tasks = tasks.map((task) => ({ ...task, categoryId: categories[0].id }));
         events = events.map((event) => ({ ...event, categoryId: categories[0].id }));
         categoryFilter = "all";
