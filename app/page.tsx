@@ -3,7 +3,7 @@
 import type { CSSProperties, ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-type View = "tasks" | "calendar" | "cosmetics";
+type View = "tasks" | "calendar" | "notes" | "cosmetics";
 type Filter = "today" | "all" | "done";
 type Priority = "low" | "medium" | "high";
 type Radius = "sharp" | "soft" | "round";
@@ -35,6 +35,15 @@ type CalendarEvent = {
   categoryId: string;
 };
 
+type SecureNote = {
+  id: string;
+  title: string;
+  content: string;
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type CalendarDay = {
   date: Date;
   value: string;
@@ -59,14 +68,20 @@ type AppBackup = {
   categories: Partial<Category>[];
   theme: Partial<ThemeSettings>;
   events: Partial<CalendarEvent>[];
+  notes?: Partial<SecureNote>[];
+  notePasswordHash?: string;
+  notePasswordSalt?: string;
 };
 
 const taskStorageKey = "pulse-todo-tasks";
 const categoryStorageKey = "pulse-todo-categories";
 const themeStorageKey = "pulse-todo-theme";
 const eventStorageKey = "pulse-calendar-events";
+const notesStorageKey = "pulse-secure-notes";
+const notePasswordHashStorageKey = "pulse-notes-password-hash";
+const notePasswordSaltStorageKey = "pulse-notes-password-salt";
 const backupStorageKey = "pulse-todo-full-backup";
-const backupVersion = 1;
+const backupVersion = 2;
 
 const defaultCategories: Category[] = [
   { id: "cat-personal", name: "Privat", color: "#246bfe" },
@@ -198,6 +213,32 @@ function getReadableTextColor(color: string) {
   return brightness > 150 ? "#111827" : "#ffffff";
 }
 
+function fallbackHash(value: string) {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return `fallback-${(hash >>> 0).toString(16)}`;
+}
+
+async function hashPassword(password: string, salt: string) {
+  const value = `${salt}:${password}`;
+
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const data = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+
+    return Array.from(new Uint8Array(digest))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  return fallbackHash(value);
+}
+
 function addMonthsToDate(date: Date, amount: number) {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12);
 }
@@ -241,6 +282,9 @@ function createBackup(
   categories: Category[],
   theme: ThemeSettings,
   events: CalendarEvent[],
+  notes: SecureNote[],
+  notePasswordHash: string,
+  notePasswordSalt: string,
 ): AppBackup {
   return {
     version: backupVersion,
@@ -249,6 +293,9 @@ function createBackup(
     categories,
     theme,
     events,
+    notes,
+    notePasswordHash,
+    notePasswordSalt,
   };
 }
 
@@ -295,6 +342,21 @@ function normalizeEvents(
   }));
 }
 
+function normalizeNotes(notes: Partial<SecureNote>[] | undefined) {
+  return (notes ?? []).map((note, index) => {
+    const timestamp = note.updatedAt ?? note.createdAt ?? new Date().toISOString();
+
+    return {
+      id: note.id ?? `note-${index}-${Date.now()}`,
+      title: note.title?.trim() || "Neue Notiz",
+      content: note.content ?? "",
+      pinned: Boolean(note.pinned),
+      createdAt: note.createdAt ?? timestamp,
+      updatedAt: timestamp,
+    };
+  });
+}
+
 function findCategory(categories: Category[], id: string) {
   return categories.find((category) => category.id === id) ?? categories[0];
 }
@@ -305,8 +367,20 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [theme, setTheme] = useState<ThemeSettings>(defaultTheme);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [notes, setNotes] = useState<SecureNote[]>([]);
+  const [notePasswordHash, setNotePasswordHash] = useState("");
+  const [notePasswordSalt, setNotePasswordSalt] = useState("");
+  const [notesUnlocked, setNotesUnlocked] = useState(false);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
+  const [notePassword, setNotePassword] = useState("");
+  const [newNotePassword, setNewNotePassword] = useState("");
+  const [confirmNotePassword, setConfirmNotePassword] = useState("");
+  const [currentNotePassword, setCurrentNotePassword] = useState("");
+  const [changedNotePassword, setChangedNotePassword] = useState("");
+  const [noteStatus, setNoteStatus] = useState("");
+  const [noteQuery, setNoteQuery] = useState("");
+  const [activeNoteId, setActiveNoteId] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [eventDate, setEventDate] = useState(getDateInputValue(1));
   const [selectedDate, setSelectedDate] = useState(getDateInputValue(0));
@@ -345,10 +419,27 @@ export default function Home() {
         eventStorageKey,
         savedBackup?.events ?? [],
       );
+      const savedNotes = readJson<Partial<SecureNote>[]>(
+        notesStorageKey,
+        savedBackup?.notes ?? [],
+      );
+      const savedNotePasswordHash =
+        window.localStorage.getItem(notePasswordHashStorageKey) ??
+        savedBackup?.notePasswordHash ??
+        "";
+      const savedNotePasswordSalt =
+        window.localStorage.getItem(notePasswordSaltStorageKey) ??
+        savedBackup?.notePasswordSalt ??
+        "";
+      const cleanNotes = normalizeNotes(savedNotes);
 
       setCategories(cleanCategories);
       setTasks(normalizeTasks(savedTasks, cleanCategories));
       setEvents(normalizeEvents(savedEvents, cleanCategories));
+      setNotes(cleanNotes);
+      setNotePasswordHash(savedNotePasswordHash);
+      setNotePasswordSalt(savedNotePasswordSalt);
+      setActiveNoteId(cleanNotes[0]?.id ?? "");
       setTheme({ ...defaultTheme, ...savedTheme });
       setTaskCategoryId(cleanCategories[0].id);
       setEventCategoryId(cleanCategories[0].id);
@@ -364,12 +455,34 @@ export default function Home() {
       window.localStorage.setItem(categoryStorageKey, JSON.stringify(categories));
       window.localStorage.setItem(themeStorageKey, JSON.stringify(theme));
       window.localStorage.setItem(eventStorageKey, JSON.stringify(events));
+      window.localStorage.setItem(notesStorageKey, JSON.stringify(notes));
+      window.localStorage.setItem(notePasswordHashStorageKey, notePasswordHash);
+      window.localStorage.setItem(notePasswordSaltStorageKey, notePasswordSalt);
       window.localStorage.setItem(
         backupStorageKey,
-        JSON.stringify(createBackup(tasks, categories, theme, events)),
+        JSON.stringify(
+          createBackup(
+            tasks,
+            categories,
+            theme,
+            events,
+            notes,
+            notePasswordHash,
+            notePasswordSalt,
+          ),
+        ),
       );
     }
-  }, [categories, events, isReady, tasks, theme]);
+  }, [
+    categories,
+    events,
+    isReady,
+    notePasswordHash,
+    notePasswordSalt,
+    notes,
+    tasks,
+    theme,
+  ]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -418,6 +531,29 @@ export default function Home() {
     () => getMonthDays(calendarCursor, sortedEvents),
     [calendarCursor, sortedEvents],
   );
+
+  const visibleNotes = useMemo(() => {
+    const query = noteQuery.trim().toLowerCase();
+
+    return [...notes]
+      .filter((item) => {
+        if (!query) {
+          return true;
+        }
+
+        return `${item.title} ${item.content}`.toLowerCase().includes(query);
+      })
+      .sort((first, second) => {
+        if (first.pinned !== second.pinned) {
+          return first.pinned ? -1 : 1;
+        }
+
+        return second.updatedAt.localeCompare(first.updatedAt);
+      });
+  }, [noteQuery, notes]);
+
+  const activeNote = notes.find((item) => item.id === activeNoteId) ?? visibleNotes[0];
+  const hasNotePassword = Boolean(notePasswordHash && notePasswordSalt);
 
   const appStyle = {
     "--app-bg": theme.background,
@@ -571,8 +707,123 @@ export default function Home() {
     );
   }
 
+  async function setupNotesPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cleanPassword = newNotePassword.trim();
+
+    if (cleanPassword.length < 4) {
+      setNoteStatus("Nimm mindestens 4 Zeichen.");
+      return;
+    }
+
+    if (cleanPassword !== confirmNotePassword.trim()) {
+      setNoteStatus("Die Passwörter sind nicht gleich.");
+      return;
+    }
+
+    const salt = crypto.randomUUID();
+    const hashed = await hashPassword(cleanPassword, salt);
+    setNotePasswordSalt(salt);
+    setNotePasswordHash(hashed);
+    setNotesUnlocked(true);
+    setNewNotePassword("");
+    setConfirmNotePassword("");
+    setNoteStatus("Notizen entsperrt.");
+  }
+
+  async function unlockNotes(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const hashed = await hashPassword(notePassword, notePasswordSalt);
+
+    if (hashed !== notePasswordHash) {
+      setNoteStatus("Passwort stimmt nicht.");
+      return;
+    }
+
+    setNotesUnlocked(true);
+    setNotePassword("");
+    setNoteStatus("Notizen entsperrt.");
+  }
+
+  async function changeNotesPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const currentHash = await hashPassword(currentNotePassword, notePasswordSalt);
+
+    if (currentHash !== notePasswordHash) {
+      setNoteStatus("Aktuelles Passwort stimmt nicht.");
+      return;
+    }
+
+    const cleanPassword = changedNotePassword.trim();
+
+    if (cleanPassword.length < 4) {
+      setNoteStatus("Das neue Passwort braucht mindestens 4 Zeichen.");
+      return;
+    }
+
+    const salt = crypto.randomUUID();
+    const hashed = await hashPassword(cleanPassword, salt);
+    setNotePasswordSalt(salt);
+    setNotePasswordHash(hashed);
+    setCurrentNotePassword("");
+    setChangedNotePassword("");
+    setNoteStatus("Passwort geändert.");
+  }
+
+  function addSecureNote() {
+    const now = new Date().toISOString();
+    const item: SecureNote = {
+      id: crypto.randomUUID(),
+      title: "Neue Notiz",
+      content: "",
+      pinned: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setNotes((current) => [item, ...current]);
+    setActiveNoteId(item.id);
+    setNoteQuery("");
+  }
+
+  function updateSecureNote(id: string, changes: Partial<SecureNote>) {
+    setNotes((current) =>
+      current.map((item) =>
+        item.id === id
+          ? { ...item, ...changes, updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    );
+  }
+
+  function toggleSecureNotePin(id: string) {
+    setNotes((current) =>
+      current.map((item) =>
+        item.id === id
+          ? { ...item, pinned: !item.pinned, updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    );
+  }
+
+  function deleteSecureNote(id: string) {
+    setNotes((current) => {
+      const nextNotes = current.filter((item) => item.id !== id);
+      setActiveNoteId(nextNotes[0]?.id ?? "");
+      return nextNotes;
+    });
+  }
+
   function exportBackup() {
-    const backup = createBackup(tasks, categories, theme, events);
+    const backup = createBackup(
+      tasks,
+      categories,
+      theme,
+      events,
+      notes,
+      notePasswordHash,
+      notePasswordSalt,
+    );
     const blob = new Blob([JSON.stringify(backup, null, 2)], {
       type: "application/json",
     });
@@ -597,10 +848,16 @@ export default function Home() {
       try {
         const backup = JSON.parse(String(reader.result)) as Partial<AppBackup>;
         const cleanCategories = normalizeCategories(backup.categories);
+        const cleanNotes = normalizeNotes(backup.notes);
 
         setCategories(cleanCategories);
         setTasks(normalizeTasks(backup.tasks ?? [], cleanCategories));
         setEvents(normalizeEvents(backup.events, cleanCategories));
+        setNotes(cleanNotes);
+        setNotePasswordHash(backup.notePasswordHash ?? "");
+        setNotePasswordSalt(backup.notePasswordSalt ?? "");
+        setNotesUnlocked(false);
+        setActiveNoteId(cleanNotes[0]?.id ?? "");
         setTheme({ ...defaultTheme, ...backup.theme });
         setTaskCategoryId(cleanCategories[0].id);
         setEventCategoryId(cleanCategories[0].id);
@@ -624,7 +881,9 @@ export default function Home() {
                 ? "Heute"
                 : view === "calendar"
                   ? "Kalender"
-                  : "Customize"}
+                  : view === "notes"
+                    ? "Notizen"
+                    : "Customize"}
             </p>
             <h1>{theme.appName}</h1>
           </div>
@@ -677,6 +936,7 @@ export default function Home() {
           {[
             ["tasks", "Tasks"],
             ["calendar", "Kalender"],
+            ["notes", "Notizen"],
             ["cosmetics", "Cosmetics"],
           ].map(([key, label]) => (
             <button
@@ -1063,6 +1323,160 @@ export default function Home() {
                 </div>
               )}
             </section>
+          </section>
+        ) : view === "notes" ? (
+          <section className="notes-panel" aria-label="Geschützte Notizen">
+            {!hasNotePassword ? (
+              <form className="notes-lock" onSubmit={setupNotesPassword}>
+                <div className="settings-heading">
+                  <p className="hero-kicker">Privat</p>
+                  <h2>Passwort festlegen</h2>
+                </div>
+                <p>
+                  Beim ersten Öffnen legst du dein Passwort fest. Danach kommst du
+                  nur damit in deine Notizen.
+                </p>
+                <input
+                  type="password"
+                  value={newNotePassword}
+                  onChange={(event) => setNewNotePassword(event.target.value)}
+                  placeholder="Neues Passwort"
+                  autoComplete="new-password"
+                />
+                <input
+                  type="password"
+                  value={confirmNotePassword}
+                  onChange={(event) => setConfirmNotePassword(event.target.value)}
+                  placeholder="Passwort wiederholen"
+                  autoComplete="new-password"
+                />
+                <button className="wide-button" type="submit">
+                  Notizen aktivieren
+                </button>
+                {noteStatus ? <span>{noteStatus}</span> : null}
+              </form>
+            ) : !notesUnlocked ? (
+              <form className="notes-lock" onSubmit={unlockNotes}>
+                <div className="settings-heading">
+                  <p className="hero-kicker">Gesperrt</p>
+                  <h2>Notizen entsperren</h2>
+                </div>
+                <input
+                  type="password"
+                  value={notePassword}
+                  onChange={(event) => setNotePassword(event.target.value)}
+                  placeholder="Passwort"
+                  autoComplete="current-password"
+                />
+                <button className="wide-button" type="submit">
+                  Entsperren
+                </button>
+                {noteStatus ? <span>{noteStatus}</span> : null}
+              </form>
+            ) : (
+              <>
+                <section className="notes-toolbar">
+                  <input
+                    value={noteQuery}
+                    onChange={(event) => setNoteQuery(event.target.value)}
+                    placeholder="Notizen suchen"
+                  />
+                  <button type="button" onClick={addSecureNote}>
+                    +
+                  </button>
+                  <button type="button" onClick={() => setNotesUnlocked(false)}>
+                    Schloss
+                  </button>
+                </section>
+
+                <section className="notes-layout">
+                  <div className="notes-list" aria-label="Notizenliste">
+                    {visibleNotes.length ? (
+                      visibleNotes.map((item) => (
+                        <button
+                          className={`note-card ${item.id === activeNote?.id ? "active" : ""}`}
+                          key={item.id}
+                          type="button"
+                          onClick={() => setActiveNoteId(item.id)}
+                        >
+                          <strong>{item.pinned ? "Angepinnt · " : ""}{item.title}</strong>
+                          <span>
+                            {item.content.trim() || "Leere Notiz"}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="empty-state">
+                        <p>Noch keine Notizen.</p>
+                        <span>Tippe auf + und leg los.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {activeNote ? (
+                    <article className="note-editor">
+                      <div className="note-editor-actions">
+                        <button
+                          type="button"
+                          onClick={() => toggleSecureNotePin(activeNote.id)}
+                        >
+                          {activeNote.pinned ? "Lösen" : "Anpinnen"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteSecureNote(activeNote.id)}
+                        >
+                          Löschen
+                        </button>
+                      </div>
+                      <input
+                        value={activeNote.title}
+                        onChange={(event) =>
+                          updateSecureNote(activeNote.id, {
+                            title: event.target.value || "Neue Notiz",
+                          })
+                        }
+                        maxLength={60}
+                      />
+                      <textarea
+                        value={activeNote.content}
+                        onChange={(event) =>
+                          updateSecureNote(activeNote.id, {
+                            content: event.target.value,
+                          })
+                        }
+                        placeholder="Schreib deine Notiz..."
+                      />
+                    </article>
+                  ) : null}
+                </section>
+
+                <form className="notes-password-card" onSubmit={changeNotesPassword}>
+                  <div className="settings-heading">
+                    <p className="hero-kicker">Passwort</p>
+                    <h2>Ändern</h2>
+                  </div>
+                  <input
+                    type="password"
+                    value={currentNotePassword}
+                    onChange={(event) => setCurrentNotePassword(event.target.value)}
+                    placeholder="Aktuelles Passwort"
+                    autoComplete="current-password"
+                  />
+                  <input
+                    type="password"
+                    value={changedNotePassword}
+                    onChange={(event) => setChangedNotePassword(event.target.value)}
+                    placeholder="Neues Passwort"
+                    autoComplete="new-password"
+                  />
+                  <button className="reset-button" type="submit">
+                    Passwort ändern
+                  </button>
+                  {noteStatus ? <span>{noteStatus}</span> : null}
+                </form>
+              </>
+            )}
           </section>
         ) : (
           <section className="cosmetics-panel" aria-label="Cosmetics Einstellungen">
